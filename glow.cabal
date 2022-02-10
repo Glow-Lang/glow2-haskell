@@ -46,6 +46,7 @@ common shared-opts
   build-depends:
       base >=4.14 && <5
     , zenhack-prelude ^>=0.1
+    , text ^>=1.2.5
   default-language:    Haskell2010
 
 library
@@ -53,7 +54,9 @@ library
   hs-source-dirs: lib
   exposed-modules:
       Glow.Main
+
     , Glow.Prelude
+    , Glow.Ast
 
 executable glow
   import: shared-opts
