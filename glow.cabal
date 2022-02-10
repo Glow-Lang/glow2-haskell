@@ -1,0 +1,67 @@
+cabal-version:       2.2
+name:                glow
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://glow-lang.org
+license:             Apache-2.0
+license-file:        LICENSE
+author:              Glow Developers
+maintainer:          contact@mukn.io
+copyright:           2022 MuKn
+-- category:
+  -- Codec
+  -- Concurrency
+  -- Control
+  -- Data
+  -- Database
+  -- Development
+  -- Distribution
+  -- Game
+  -- Graphics
+  -- Language
+  -- Math
+  -- Network
+  -- Sound
+  -- System
+  -- Testing
+  -- Text
+  -- Web
+
+build-type:          Simple
+extra-source-files:
+    CHANGELOG.md
+  , README.md
+  , .gitignore
+
+source-repository head
+  type:     git
+  branch:   master
+  location: https://github.com/glow-lang/glow
+
+common shared-opts
+  default-extensions:
+      NoImplicitPrelude
+    , OverloadedStrings
+  build-depends:
+      base >=4.14 && <5
+    , zenhack-prelude ^>=0.1
+  default-language:    Haskell2010
+
+library
+  import: shared-opts
+  hs-source-dirs: lib
+  exposed-modules:
+    Glow.Main
+
+executable glow
+  import: shared-opts
+  build-depends: glow
+  hs-source-dirs: exe
+  main-is: Main.hs
+
+test-suite tests
+  import: shared-opts
+  type: exitcode-stdio-1.0
+  hs-source-dirs: tests
+  main-is: Main.hs
