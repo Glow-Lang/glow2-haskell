@@ -52,7 +52,8 @@ library
   import: shared-opts
   hs-source-dirs: lib
   exposed-modules:
-    Glow.Main
+      Glow.Main
+    , Glow.Prelude
 
 executable glow
   import: shared-opts
@@ -62,6 +63,7 @@ executable glow
 
 test-suite tests
   import: shared-opts
+  build-depends: glow
   type: exitcode-stdio-1.0
   hs-source-dirs: tests
   main-is: Main.hs

@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Zhp
+import Glow.Prelude
 
 main :: IO ()
 main = pure ()
