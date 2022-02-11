@@ -87,6 +87,10 @@ tests = describe "Glow.Parser" $ do
                 (Just $ ExLiteral $ LitNat 2)
             , mkParseTest
                 expr
+                ["x"]
+                (Just $ ExIdent "x")
+            , mkParseTest
+                expr
                 ["\"abc\""]
                 (Just $ ExLiteral $ LitStr "abc")
             , mkParseTest
@@ -106,7 +110,7 @@ tests = describe "Glow.Parser" $ do
             , mkParseTest
                 expr
                 ["{ x }"]
-                (Just $ ExIdent "x")
+                (Just $ ExBody [] $ ExIdent "x")
             , mkParseTest
                 expr
                 ["{ x: 1 }"]

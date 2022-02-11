@@ -72,7 +72,8 @@ litNat = lexeme $ litNatHex <|> litNatDecimal
 -- Expressions
 expr :: Parser Expr
 expr = choice
-    [ literalExpr <?> "literal"
+    [ identExpr <?> "identifier"
+    , literalExpr <?> "literal"
     , lambdaExpr <?> "lambda"
     , try recordExpr <?> "record"
     , bodyExpr
@@ -80,6 +81,9 @@ expr = choice
 
 literalExpr :: Parser Expr
 literalExpr = ExLiteral <$> literal
+
+identExpr :: Parser Expr
+identExpr = ExIdent <$> ident
 
 bodyExpr :: Parser Expr
 bodyExpr = between (symbol "{") (symbol "}") $ do
