@@ -79,48 +79,74 @@ tests = describe "Glow.Parser" $ do
                         ]
                     )
                 ]
-    describe "Whole programs" $ checkExamples
-        [ mkParseTest
-            program
-            [ "let publishHello = () => {\n"
-            , "};"
-            ]
-            (Just
-                [ StLet "publishHello" $ ExLambda Function
-                    { fParams = []
-                    , fBodyStmts = []
-                    , fBodyExpr = ExRecord []
-                    }
+    describe "Whole programs" $ do
+        describe "valid examples" $ checkExamples
+            [ mkParseTest
+                program
+                [ "let publishHello = () => {\n"
+                , "};"
                 ]
-            )
-        , mkParseTest
-            program
-            [ "let publishHello = (seller:Address,price) => {\n"
-            , "};"
-            ]
-            (Just
-                [ StLet "publishHello" $ ExLambda Function
-                    { fParams =
-                        [ Param { pName = "seller", pType = Just (TyIdent "Address") }
-                        , Param { pName = "price", pType = Nothing }
-                        ]
-                    , fBodyStmts = []
-                    , fBodyExpr = ExRecord []
-                    }
+                (Just
+                    [ StLet "publishHello" $ ExLambda Function
+                        { fParams = []
+                        , fBodyStmts = []
+                        , fBodyExpr = ExRecord []
+                        }
+                    ]
+                )
+            , mkParseTest
+                program
+                [ "let publishHello = (seller:Address,price) => {\n"
+                , "};"
                 ]
-            )
-        , mkParseTest
-            program
-            [ "let a = 1;\n"
-            , "// some comments followed by newline\n"
-            , "/* block comment\n"
-            , "*/\n"
-            ]
-            (Just
-                [ StLet "a" (ExLiteral (LitNat 1))
+                (Just
+                    [ StLet "publishHello" $ ExLambda Function
+                        { fParams =
+                            [ Param { pName = "seller", pType = Just (TyIdent "Address") }
+                            , Param { pName = "price", pType = Nothing }
+                            ]
+                        , fBodyStmts = []
+                        , fBodyExpr = ExRecord []
+                        }
+                    ]
+                )
+            , mkParseTest
+                program
+                [ "let a = 1;\n"
+                , "// some comments followed by newline\n"
+                , "/* block comment\n"
+                , "*/\n"
                 ]
-            )
-        ]
+                (Just
+                    [ StLet "a" (ExLiteral (LitNat 1))
+                    ]
+                )
+            , mkParseTest
+                program
+                [ "let a = 1;\n"
+                , "let b = 2;"
+                ]
+                (Just
+                    [ StLet "a" (ExLiteral (LitNat 1))
+                    , StLet "b" (ExLiteral (LitNat 2))
+                    ]
+                )
+            ]
+        describe "Invalid examples" $ checkExamples
+            [ mkParseTest
+                program
+                [ "let a = 1;\n"
+                , "("
+                ]
+                Nothing
+            , mkParseTest
+                program
+                [ "let a = 1;\n"
+                , "// invalid statement:\n"
+                , "("
+                ]
+                Nothing
+            ]
 
 mkParseTest :: (Show a, Eq a) => Parser a -> [LT.Text] -> Maybe a -> Expectation
 mkParseTest p input result =
