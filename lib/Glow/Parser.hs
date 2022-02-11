@@ -27,7 +27,7 @@ symbol = L.symbol whitespace
 -- identifiers
 ident :: Parser Symbol
 ident = lexeme $ do
-    start <- alphaNumChar
+    start <- letterChar
     rest <- takeWhileP Nothing $ \c ->
         isAlphaNum c || c `elem` ("_$!" :: [Char])
     pure $ Symbol $ LT.pack [start] <> rest
@@ -81,7 +81,10 @@ fnBody = do
 
 
 paramList :: Parser [Param]
-paramList = between (symbol "(") (symbol ")") (ident `sepBy` symbol ",")
+paramList = between (symbol "(") (symbol ")") (fnParam `sepBy` symbol ",")
+
+fnParam :: Parser Param
+fnParam = ident
 
 recordExpr :: Parser Expr
 recordExpr = ExRecord <$>
