@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- Glow Ast.
 module Glow.Ast where
 
@@ -9,11 +10,12 @@ import qualified Data.Text.Lazy as LT
 
 type Str = LT.Text
 
+type Program = [Stmt]
+
 -- | A glow statement
 data Stmt
     = StExpr Expr
-    | StFunDef Function
-    | StValDef Symbol Expr
+    | StLet Symbol Expr
     deriving(Show, Read, Eq)
 
 -- | A glow expression
@@ -23,6 +25,8 @@ data Expr
     | ExLiteral Literal
     -- | ExUnary UnaryOp Expr
     | ExBinary BinOp Expr Expr
+    | ExLambda Function
+    | ExRecord [(Symbol, Expr)]
     deriving(Show, Read, Eq)
 
 {-
@@ -39,11 +43,13 @@ data BinOp
     deriving(Show, Read, Eq)
 
 data Function = Function
-    { fdName   :: Maybe Symbol
-    , fdParams :: [Symbol]
-    , fdBody   :: [Stmt]
+    { fParams    :: [Param]
+    , fBodyStmts :: [Stmt]
+    , fBodyExpr  :: Expr
     }
     deriving(Show, Read, Eq)
+
+type Param = Symbol -- TODO: add type
 
 data Literal
     = LitBool !Bool
@@ -53,4 +59,4 @@ data Literal
     deriving(Show, Read, Eq)
 
 newtype Symbol = Symbol LT.Text
-    deriving(Show, Read, Eq, Ord)
+    deriving(Show, Read, Eq, Ord, IsString)
