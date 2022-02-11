@@ -7,6 +7,7 @@ import           Data.Text.Lazy             (Text)
 import qualified Data.Text.Lazy             as LT
 import           Data.Void                  (Void)
 import           Numeric.Natural            (Natural)
+import           Prelude                    (fail)
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -40,6 +41,7 @@ literal :: Parser Literal
 literal = choice
     [ LitBool <$> litBool
     , LitNat <$> litNat
+    , LitStr <$> litStr
     ]
 
 -- booleans
@@ -68,6 +70,31 @@ litNat = lexeme $ litNatHex <|> litNatDecimal
                 pure $ LT.pack [d] <> ds
             ]
         pure $ read (LT.unpack ds)
+
+litStr :: Parser Str
+litStr = lexeme $ do
+    char '"' *> (mconcat <$> many strChars) <* char '"'
+  where
+    strChars = choice
+        [ takeWhile1P Nothing (\c -> not $ c `elem` ['"', '\\'])
+        , escapeSequence
+        ]
+    escapeSequence = do
+        char '\\'
+        c <- anySingle
+        case c of
+            '\\' -> pure $ LT.pack [c]
+            '"'  -> pure $ LT.pack [c]
+            'n'  -> pure "\n"
+            'x'  -> hexEscapedChar
+            'X'  -> hexEscapedChar
+            _ ->
+                fail $ "Illegal escape character: " <> [c]
+    hexEscapedChar = do
+        d0 <- satisfy isHexDigit
+        d1 <- satisfy isHexDigit
+        let codepoint = read ("0x" <> [d0, d1])
+        pure $ LT.pack [toEnum codepoint]
 
 -- Expressions
 expr :: Parser Expr
