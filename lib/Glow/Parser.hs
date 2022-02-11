@@ -88,32 +88,11 @@ lambda = do
     params <- paramList
     -- TODO: optional return type annotation.
     symbol "=>"
-    (bodyStmts, bodyExpr) <- fnBody
+    body <- expr
     pure Function
         { fParams = params
-        , fBodyStmts = bodyStmts
-        , fBodyExpr = bodyExpr
+        , fBody = body
         }
-
-fnBody :: Parser ([Stmt], Expr)
-fnBody = do
-    -- Parsing function bodies is finnicky; we expect a series of
-    -- statements (terminated with ;) followed by an expression.
-    -- But an expression is also always a syntactically valid
-    -- statement. We have to go to the end of the body before
-    -- we know which we should parse it as. Rather than just
-    -- backtrack and having to re-parse it as an expression,
-    -- we hang on to the already parsed expression so if
-    -- parsing more statements fails we just return it as-is.
-    s <- stmt
-    let rest = try $ do
-            symbol ";"
-            (ss, e) <- fnBody
-            pure (s:ss, e)
-    case s of
-        StExpr e -> rest <|> pure ([], e)
-        _        -> rest
-
 
 paramList :: Parser [Param]
 paramList = between (symbol "(") (symbol ")") (fnParam `sepBy` symbol ",")

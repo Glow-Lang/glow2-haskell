@@ -89,8 +89,7 @@ tests = describe "Glow.Parser" $ do
                 (Just
                     [ StLet "publishHello" $ ExLambda Function
                         { fParams = []
-                        , fBodyStmts = []
-                        , fBodyExpr = ExRecord []
+                        , fBody = ExRecord []
                         }
                     ]
                 )
@@ -105,8 +104,7 @@ tests = describe "Glow.Parser" $ do
                             [ Param { pName = "seller", pType = Just (TyIdent "Address") }
                             , Param { pName = "price", pType = Nothing }
                             ]
-                        , fBodyStmts = []
-                        , fBodyExpr = ExRecord []
+                        , fBody = ExRecord []
                         }
                     ]
                 )

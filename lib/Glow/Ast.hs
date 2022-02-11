@@ -43,9 +43,8 @@ data BinOp
     deriving(Show, Read, Eq)
 
 data Function = Function
-    { fParams    :: [Param]
-    , fBodyStmts :: [Stmt]
-    , fBodyExpr  :: Expr
+    { fParams :: [Param]
+    , fBody   :: Expr
     }
     deriving(Show, Read, Eq)
 
