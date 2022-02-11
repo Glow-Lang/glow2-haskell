@@ -6,9 +6,11 @@ import Glow.Prelude hiding (many)
 import           Data.Text.Lazy             (Text)
 import qualified Data.Text.Lazy             as LT
 import           Data.Void                  (Void)
+import           Numeric.Natural            (Natural)
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
+import           Text.Read                  (read)
 
 type Parser = Parsec Void Text
 
@@ -32,18 +34,51 @@ ident = lexeme $ do
         isAlphaNum c || c `elem` ("_$!" :: [Char])
     pure $ Symbol $ LT.pack [start] <> rest
 
+-- Literals
+
+literal :: Parser Literal
+literal = choice
+    [ LitBool <$> litBool
+    , LitNat <$> litNat
+    ]
+
 -- booleans
-bool :: Parser Bool
-bool =
+litBool :: Parser Bool
+litBool =
     (True <$ symbol "true") <|>
     (False <$ symbol "false")
+
+litNat :: Parser Natural
+litNat = lexeme $ litNatHex <|> litNatDecimal
+  where
+    litNatHex = do
+        string "0x"
+        -- XXX this is somewhat more permissive than the old scheme parser,
+        -- which did not allow leading zeros or capital letters.
+        ds <- takeWhile1P Nothing isHexDigit
+        -- this is luckily a subset of the Haskell syntax, so we can just
+        -- use 'read' to convert to a number.
+        pure $ read ("0x" <> LT.unpack ds)
+    litNatDecimal = do
+        ds <- choice
+            [ string "0"
+            , do
+                d <- oneOf ['1'..'9']
+                ds <- takeWhileP Nothing isDigit
+                pure $ LT.pack [d] <> ds
+            ]
+        pure $ read (LT.unpack ds)
 
 -- Expressions
 expr :: Parser Expr
 expr = choice
-    [ recordExpr <?> "record"
+    [ literalExpr <?> "literal"
+    , recordExpr <?> "record"
     , lambdaExpr <?> "lambda"
     ] <?> "expression"
+
+literalExpr :: Parser Expr
+literalExpr = ExLiteral <$> literal
 
 lambdaExpr :: Parser Expr
 lambdaExpr = ExLambda <$> lambda

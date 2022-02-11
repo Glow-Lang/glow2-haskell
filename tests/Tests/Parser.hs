@@ -93,6 +93,33 @@ tests = describe "Glow.Parser" $ do
                     }
                 ]
             )
+        , mkParseTest
+            program
+            [ "let publishHello = (seller:Address,price) => {\n"
+            , "};"
+            ]
+            (Just
+                [ StLet "publishHello" $ ExLambda Function
+                    { fParams =
+                        [ Param { pName = "seller", pType = Just (TyIdent "Address") }
+                        , Param { pName = "price", pType = Nothing }
+                        ]
+                    , fBodyStmts = []
+                    , fBodyExpr = ExRecord []
+                    }
+                ]
+            )
+        , mkParseTest
+            program
+            [ "let a = 1;\n"
+            , "// some comments followed by newline\n"
+            , "/* block comment\n"
+            , "*/\n"
+            ]
+            (Just
+                [ StLet "a" (ExLiteral (LitNat 1))
+                ]
+            )
         ]
 
 mkParseTest :: (Show a, Eq a) => Parser a -> [LT.Text] -> Maybe a -> Expectation
