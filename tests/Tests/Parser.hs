@@ -79,6 +79,74 @@ tests = describe "Glow.Parser" $ do
                         ]
                     )
                 ]
+    describe "Expressions" $ do
+        checkExamples
+            [ mkParseTest
+                expr
+                ["2"]
+                (Just $ ExLiteral $ LitNat 2)
+            , mkParseTest
+                expr
+                ["\"abc\""]
+                (Just $ ExLiteral $ LitStr "abc")
+            , mkParseTest
+                expr
+                ["0xABC123"]
+                (Just $ ExLiteral $ LitNat 11256099)
+            , mkParseTest
+                expr
+                ["\"\\x63\\X4A\""]
+                (Just $ ExLiteral $ LitStr "cJ")
+            ]
+        describe "With curly braces" $ checkExamples
+            [ mkParseTest
+                expr
+                ["{}"]
+                (Just $ ExRecord [])
+            , mkParseTest
+                expr
+                ["{ x }"]
+                (Just $ ExIdent "x")
+            , mkParseTest
+                expr
+                ["{ x: 1 }"]
+                (Just $ ExRecord [("x", ExLiteral $ LitNat 1)])
+            , mkParseTest
+                expr
+                ["{ x; 1 }"]
+                (Just $ ExBody
+                    [ StExpr $ ExIdent "x" ]
+                    (ExLiteral $ LitNat 1)
+                )
+            -- TODO: if/when we add record-field shorthand, it would look like this:
+            --
+            -- mkParseTest
+            --  expr
+            --  ["{ x, y }"]
+            --  (Just $ ExRecord
+            --      [ ("x", ExIdent "x")
+            --      , ("y", ExIdent "y")
+            --      ]
+            --  )
+            , mkParseTest
+                expr
+                ["{ x: 1, y: 2 }"]
+                (Just $ ExRecord
+                    [ ("x", ExLiteral $ LitNat 1)
+                    , ("y", ExLiteral $ LitNat 2)
+                    ]
+                )
+            ]
+    describe "Statements" $ checkExamples
+        [ mkParseTest
+            stmt
+            ["let a = 1"]
+            (Just $ StLet "a" (ExLiteral $ LitNat 1))
+        , mkParseTest
+            stmt
+            ["("]
+            Nothing
+        ]
     describe "Whole programs" $ do
         describe "valid examples" $ checkExamples
             [ mkParseTest

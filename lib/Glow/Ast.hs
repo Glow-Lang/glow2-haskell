@@ -27,6 +27,7 @@ data Expr
     | ExBinary BinOp Expr Expr
     | ExLambda Function
     | ExRecord [(Symbol, Expr)]
+    | ExBody [Stmt] Expr -- { x; y; z }
     deriving(Show, Read, Eq)
 
 {-

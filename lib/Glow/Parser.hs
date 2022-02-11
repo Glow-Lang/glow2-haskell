@@ -73,12 +73,35 @@ litNat = lexeme $ litNatHex <|> litNatDecimal
 expr :: Parser Expr
 expr = choice
     [ literalExpr <?> "literal"
-    , recordExpr <?> "record"
     , lambdaExpr <?> "lambda"
+    , try recordExpr <?> "record"
+    , bodyExpr
     ] <?> "expression"
 
 literalExpr :: Parser Expr
 literalExpr = ExLiteral <$> literal
+
+bodyExpr :: Parser Expr
+bodyExpr = between (symbol "{") (symbol "}") $ do
+    (ss, e) <- go
+    pure $ ExBody ss e
+  where
+    go = do
+        -- Parsing bodies is finnicky; we expect a series of statements,
+        -- followed by an expression. But an expression is also always
+        -- a syntactically valid statement. We have to go to the
+        -- end of the body before we know which we should parse it as.
+        -- Rather than just backtrack and having to re-parse it as an
+        -- expression, we hang on to the already parsed expression so if
+        -- parsing more statements fails we just return it as-is.
+        s <- stmt
+        let rest = try $ do
+                symbol ";"
+                (ss, e) <- go
+                pure (s:ss, e)
+        case s of
+            StExpr e -> rest <|> pure ([], e)
+            _        -> rest
 
 lambdaExpr :: Parser Expr
 lambdaExpr = ExLambda <$> lambda
