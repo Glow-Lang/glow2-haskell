@@ -84,7 +84,25 @@ paramList :: Parser [Param]
 paramList = between (symbol "(") (symbol ")") (fnParam `sepBy` symbol ",")
 
 fnParam :: Parser Param
-fnParam = ident
+fnParam = go <?> "function parameter" where
+  go = do
+    name <- ident
+    choice
+        [ try $ do
+            symbol ":"
+            t <- typ
+            pure Param
+                { pName = name
+                , pType = Just t
+                }
+        , pure Param
+            { pName = name
+            , pType = Nothing
+            }
+        ]
+
+typ :: Parser Type
+typ = (TyIdent <$> ident) <?> "type"
 
 recordExpr :: Parser Expr
 recordExpr = ExRecord <$>

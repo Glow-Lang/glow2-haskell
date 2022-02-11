@@ -49,7 +49,15 @@ data Function = Function
     }
     deriving(Show, Read, Eq)
 
-type Param = Symbol -- TODO: add type
+data Param = Param
+    { pName :: Symbol
+    , pType :: Maybe Type
+    }
+    deriving(Show, Read, Eq)
+
+data Type
+    = TyIdent Symbol
+    deriving(Show, Read, Eq)
 
 data Literal
     = LitBool !Bool
