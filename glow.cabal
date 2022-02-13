@@ -81,3 +81,4 @@ test-suite tests
   main-is: Main.hs
   other-modules:
       Tests.Parser
+    , Tests.Runtime.Interaction

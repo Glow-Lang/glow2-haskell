@@ -1,6 +1,9 @@
+{-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE StandaloneDeriving     #-}
 {-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE UndecidableInstances   #-}
 module Glow.Runtime.Interaction where
 
 import Glow.Prelude
@@ -17,11 +20,17 @@ data Message ih = Message
     -- support multiple assets, NFTs, etc.
     }
 
+deriving instance (Show (Data h), Show (ParticipantId h)) => Show (Message h)
+deriving instance (Eq (Data h), Eq (ParticipantId h)) => Eq (Message h)
+
 -- | A message, paired with the participant who sent it.
 data MessageWithParticipant ih = MessageWithParticipant
     { mwpMessage     :: Message ih
     , mwpParticipant :: ParticipantId ih
     }
+
+deriving instance (Show (Data h), Show (ParticipantId h)) => Show (MessageWithParticipant h)
+deriving instance (Eq (Data h), Eq (ParticipantId h)) => Eq (MessageWithParticipant h)
 
 -- | An interaction 'Handle' is used by participants to communicate
 -- with the consensus for an interaction.
