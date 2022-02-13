@@ -63,6 +63,7 @@ library
     , Glow.Prelude
     , Glow.Runtime.Interaction
     , Glow.Runtime.Interaction.STM
+    , Glow.Consensus.Local
 
 executable glow
   import: shared-opts

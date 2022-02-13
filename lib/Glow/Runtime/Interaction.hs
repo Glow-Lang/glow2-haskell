@@ -50,7 +50,7 @@ class Handle ih where
 -- | A 'ConsensusServer' is used to handle the IO needed to
 -- act as a consensus. A typical caller of this interface is
 -- a proxy for some consensus running on a blockchain.
-class ConsensusServer s ih | s -> ih where
+class Handle ih => ConsensusServer s ih | s -> ih where
     -- | Effect monad to interact with the server context.
     type ServerM s :: * -> *
 
