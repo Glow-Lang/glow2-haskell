@@ -19,8 +19,8 @@ data Message ih = Message
 
 -- | A message, paired with the participant who sent it.
 data MessageWithParticipant ih = MessageWithParticipant
-    { message     :: Message ih
-    , participant :: ParticipantId ih
+    { mwpMessage     :: Message ih
+    , mwpParticipant :: ParticipantId ih
     }
 
 -- | An interaction 'Handle' is used by participants to communicate
@@ -28,7 +28,7 @@ data MessageWithParticipant ih = MessageWithParticipant
 class Handle ih where
     -- | @'HandleM' i@ is an effect monad in which the handle may be
     -- used.
-    type HandleM ih a
+    type HandleM ih :: * -> *
 
     -- | An identifier for a participant.
     type ParticipantId ih
@@ -52,10 +52,10 @@ class Handle ih where
 -- a proxy for some consensus running on a blockchain.
 class ConsensusServer s ih | s -> ih where
     -- | Effect monad to interact with the server context.
-    type ServerM s a
+    type ServerM s :: * -> *
 
     -- | Receive the next message sent to the consensus.
-    receive :: s -> MessageWithParticipant ih
+    receive :: s -> ServerM s (MessageWithParticipant ih)
 
     -- | Accept a message and notify participants of it.
     emit :: s -> MessageWithParticipant ih -> ServerM s ()
