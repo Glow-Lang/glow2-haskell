@@ -64,6 +64,7 @@ library
     , Glow.Runtime.Interaction
     , Glow.Runtime.Interaction.STM
     , Glow.Consensus.Local
+    , Glow.Consensus.StateChannel
 
 executable glow
   import: shared-opts

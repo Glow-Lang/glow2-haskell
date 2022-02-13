@@ -16,11 +16,11 @@ import Glow.Runtime.Interaction
 -- This handles the IO for a consensus server using the
 -- given state machine.
 runStateMachine
-    :: (ConsensusServer s h, Monad (ServerM s))
+    :: (ConsensusServer srv i, Monad (ServerM srv))
     => state
-    -> (state -> MessageWithParticipant h -> Maybe state)
-    -> s
-    -> ServerM s Void
+    -> (state -> MessageWithParticipant i -> Maybe state)
+    -> srv
+    -> ServerM srv Void
 runStateMachine oldState transition server = do
     msg <- receive server
     case transition oldState msg of
