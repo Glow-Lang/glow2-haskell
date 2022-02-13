@@ -3,7 +3,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies          #-}
 module Glow.Runtime.Interaction.STM
-    ( STMHandle
+    ( STMInteraction
+    , STMHandle
     , STMServer
     , STMParticipantId
     , newServer
@@ -15,7 +16,13 @@ import Glow.Runtime.Interaction
 
 import Control.Concurrent.Classy
 
-type MsgChan m d = TChan (STM m) (MessageWithParticipant (STMHandle m d))
+type MsgChan m d = TChan (STM m) (MessageWithParticipant (STMInteraction d))
+
+data STMInteraction d
+
+instance Interaction (STMInteraction d) where
+    type ParticipantId (STMInteraction d) = STMParticipantId
+    type Data (STMInteraction d) = d
 
 data STMHandle m d = STMHandle
     { hSubmitChan  :: MsgChan m d
@@ -61,10 +68,8 @@ newHandle s = do
         , hParticipant = p
         }
 
-instance MonadConc m => Handle (STMHandle m d) where
+instance MonadConc m => Handle (STMHandle m d) (STMInteraction d) where
     type HandleM (STMHandle m d) = m
-    type ParticipantId (STMHandle m d) = STMParticipantId
-    type Data (STMHandle m d) = d
 
     myParticipantId = hParticipant
     submit h msg = atomically $
@@ -74,7 +79,7 @@ instance MonadConc m => Handle (STMHandle m d) where
             }
     listenNext h = atomically $ readTChan (hListenChan h)
 
-instance MonadConc m => ConsensusServer (STMServer m d) (STMHandle m d) where
+instance MonadConc m => ConsensusServer (STMServer m d) (STMInteraction d) where
     type ServerM (STMServer m d) = m
 
     receive s = atomically $ readTChan (sReceiveChan s)
