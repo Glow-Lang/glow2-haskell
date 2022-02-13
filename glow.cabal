@@ -62,7 +62,7 @@ library
     , Glow.Parser
     , Glow.Prelude
     , Glow.Runtime.Interaction
-    , Glow.Runtime.Interaction.InMemory
+    , Glow.Runtime.Interaction.STM
 
 executable glow
   import: shared-opts
