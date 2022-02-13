@@ -2,6 +2,8 @@
 {-# LANGUAGE TypeFamilies     #-}
 module Glow.Consensus.Local where
 
+import Data.Void (Void)
+
 import Glow.Prelude
 import Glow.Runtime.Interaction
 
@@ -18,7 +20,7 @@ runStateMachine
     => state
     -> (state -> MessageWithParticipant h -> Maybe state)
     -> s
-    -> ServerM s a
+    -> ServerM s Void
 runStateMachine oldState transition server = do
     msg <- receive server
     case transition oldState msg of
