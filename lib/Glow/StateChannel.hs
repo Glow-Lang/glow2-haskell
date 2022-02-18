@@ -52,7 +52,7 @@ data WrappedHandleState h s i = WrappedHandleState
     { whsState :: SC.State s
     }
 
-instance Handle h (SC.StateChannel s i) => Handle (WrappedHandle h s i) i where
+instance (Interaction i, MonadConc (HandleM h), Handle h (SC.StateChannel s i)) => Handle (WrappedHandle h s i) i where
     type HandleM (WrappedHandle h s i) = HandleM h
 
     myParticipantId = myParticipantId . whHandle
@@ -68,10 +68,12 @@ instance Handle h (SC.StateChannel s i) => Handle (WrappedHandle h s i) i where
                 -- TODO: handle errors more systematically.
                 error "Invalid message"
             Just newState -> do
-                agreement <- propose (whProposer wh) SC.State
-                    { SC.stateUnderlying = newState
-                    , SC.stateVersion = SC.stateVersion (whsState s) + 1
-                    , SC.stateByAgreement = True
+                agreement <- propose (whProposer wh) SC.Agreement
+                    { SC.agreeProposal = SC.Proposal
+                        { SC.proposeVersion = SC.stateVersion (whsState s) + 1
+                        , SC.proposeState = newState
+                        }
+                    , SC.agreeProofs = M.empty -- TODO
                     }
                 submit (whHandle wh) Message
                     { messageData = SC.SCMAgreement agreement
