@@ -1,73 +1,50 @@
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE StandaloneDeriving     #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
 module Glow.Runtime.Interaction where
 
 import Glow.Prelude
 
 import qualified Data.Map.Strict as M
 
--- | A message sent to a consensus.
-data Message i = Message
-    { messageData           :: Data i
+-- | A message sent to a consensus, with value type @d@ and participant
+-- ids @p@.
+data Message p d = Message
+    { messageData           :: d
     -- ^ The data payload for the message.
-    , messageAssetTransfers :: M.Map (ParticipantId i) Integer
+    , messageAssetTransfers :: M.Map p Integer
     -- ^ Differences in balances for each participant induced by
     -- this message. TODO: maybe make this more abstract, to
     -- support multiple assets, NFTs, etc.
     }
-
-deriving instance (Show (Data i), Show (ParticipantId i)) => Show (Message i)
-deriving instance (Eq (Data i), Eq (ParticipantId i)) => Eq (Message i)
+    deriving(Show, Eq)
 
 -- | A message, paired with the participant who sent it.
-data MessageWithParticipant i = MessageWithParticipant
-    { mwpMessage     :: Message i
-    , mwpParticipant :: ParticipantId i
+data MessageWithParticipant p d = MessageWithParticipant
+    { mwpMessage     :: Message p d
+    , mwpParticipant :: p
     }
-
-deriving instance (Show (Data i), Show (ParticipantId i)) => Show (MessageWithParticipant i)
-deriving instance (Eq (Data i), Eq (ParticipantId i)) => Eq (MessageWithParticipant i)
-
--- | An interaction is a (usually phantom) type used to
--- carry information about a particular type of interaction.
-class Interaction i where
-    -- | An identifier for a participant.
-    type ParticipantId i
-
-    -- | The data portion of a message.
-    type Data i
+    deriving(Show, Eq)
 
 -- | An interaction 'Handle' is used by participants to communicate
--- with the consensus for an interaction of type @i@.
-class Interaction i => Handle h i | h -> i where
-    -- | @'HandleM' h@ is an effect monad in which the handle may be
-    -- used.
-    type HandleM h :: * -> *
-
-    -- | Get the participant that is associated with messages
+-- with the consensus for an interaction. It has participant ids @p@,
+-- value type @d@, and operates in effect monad @m@.
+data Handle m p d = Handle
+    { myParticipantId :: p
+    -- ^ Get the participant that is associated with messages
     -- sent using this handle.
-    myParticipantId :: h -> ParticipantId i
-
-    -- | Send a message to the consensus.
-    submit :: h -> Message i -> HandleM h ()
-
-    -- | Wait for the next message committed to the consensus.
-    listenNext :: h -> HandleM h (MessageWithParticipant i)
+    , submit          :: Message p d -> m ()
+    -- ^ Send a message to the consensus.
+    , listenNext      :: m (MessageWithParticipant p d)
+    -- ^ Wait for the next message committed to the consensus.
+    }
 
 
 -- | A 'ConsensusServer' is used to handle the IO needed to
 -- act as a consensus. A typical caller of this interface is
 -- a proxy for some consensus running on a blockchain.
-class Interaction i => ConsensusServer s i | s -> i where
-    -- | Effect monad to interact with the server context.
-    type ServerM s :: * -> *
-
-    -- | Receive the next message sent to the consensus.
-    receive :: s -> ServerM s (MessageWithParticipant i)
-
-    -- | Accept a message and notify participants of it.
-    emit :: s -> MessageWithParticipant i -> ServerM s ()
+--
+-- Parameters are as for 'Handle'.
+data ConsensusServer m p d = ConsensusServer
+    { receive :: m (MessageWithParticipant p d)
+    -- ^ Receive the next message sent to the consensus.
+    ,  emit   :: MessageWithParticipant p d -> m ()
+    -- ^ Accept a message and notify participants of it.
+    }

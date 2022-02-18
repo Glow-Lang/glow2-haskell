@@ -1,10 +1,4 @@
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE KindSignatures            #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE UndecidableInstances      #-}
+{-# LANGUAGE KindSignatures #-}
 -- | Half-baked implementation of state channels, in the form of
 -- a wrapper around a state channel interaction that lets you treat
 -- it like the normal (non-state channel) interaction it governs.
@@ -30,37 +24,35 @@ import           Numeric.Natural           (Natural)
 
 data Proposer (m :: * -> *) s i = Proposer
 
-propose :: MonadConc m => Proposer m s i -> SC.Agreement s i -> m (SC.Agreement s i)
+propose :: MonadConc m => Proposer m s p -> SC.Agreement s p -> m (SC.Agreement s p)
 propose _ = pure
     -- TODO: actually talk to the other participants somehow.
 
-data WrappedHandle h s i = WrappedHandle
-    { whHandle            :: h
-    , whProposer          :: Proposer (HandleM h) s i
-    , whTransition        :: s -> MessageWithParticipant i -> Maybe s
-    , whState             :: TVar (STM (HandleM h)) (WrappedHandleState h s i)
-    , whIncomingProposals :: TChan (STM (HandleM h)) (ProposalMsg (HandleM h) s i)
+data WrappedHandle m s p d = WrappedHandle
+    { whHandle            :: Handle m p (SC.SCMessage s p d)
+    , whProposer          :: Proposer m s p
+    , whTransition        :: s -> MessageWithParticipant p d -> Maybe s
+    , whState             :: TVar (STM m) (WrappedHandleState s)
+    , whIncomingProposals :: TChan (STM m) (ProposalMsg m s p d)
     }
 
-data ProposalMsg m s i = ProposalMsg
+data ProposalMsg m s p d = ProposalMsg
     { pmOldVersion :: !Natural
-    , pmMessage    :: MessageWithParticipant i
-    , pmReply      :: SC.Proposal s -> SC.Proof s i -> STM m ()
+    , pmMessage    :: MessageWithParticipant p d
+    , pmReply      :: SC.Proposal s -> SC.Proof s p -> STM m ()
     }
 
-data WrappedHandleState h s i = WrappedHandleState
+data WrappedHandleState s = WrappedHandleState
     { whsState :: SC.State s
     }
 
-instance (Interaction i, MonadConc (HandleM h), Handle h (SC.StateChannel s i)) => Handle (WrappedHandle h s i) i where
-    type HandleM (WrappedHandle h s i) = HandleM h
-
-    myParticipantId = myParticipantId . whHandle
-
-    submit wh msg = do
+wrapHandle :: MonadConc m => WrappedHandle m s p d -> Handle m p d
+wrapHandle wh = Handle
+    { myParticipantId = myParticipantId (whHandle wh)
+    , submit = \msg -> do
         let mwp = MessageWithParticipant
                 { mwpMessage = msg
-                , mwpParticipant = myParticipantId wh
+                , mwpParticipant = myParticipantId (whHandle wh)
                 }
         s <- atomically $ readTVar (whState wh)
         case whTransition wh (SC.stateUnderlying (whsState s)) mwp of
@@ -79,7 +71,7 @@ instance (Interaction i, MonadConc (HandleM h), Handle h (SC.StateChannel s i)) 
                     { messageData = SC.SCMAgreement agreement
                     , messageAssetTransfers = M.empty
                     }
-    listenNext wh = do
+    , listenNext = do
         -- TODO:
         --
         -- Wait for either:
@@ -105,14 +97,10 @@ instance (Interaction i, MonadConc (HandleM h), Handle h (SC.StateChannel s i)) 
                     error "TODO"
                 SC.SCMDirect _ ->
                     error "TODO"
+    }
 
 -- | Accept and sign off on an incoming proposal (if valid).
-acceptProposal ::
-    ( Handle (WrappedHandle h s i) i
-    , MonadConc (HandleM h)
-    )
-    => WrappedHandle h s i
-    -> STM (HandleM h) (MessageWithParticipant i)
+acceptProposal :: MonadConc m => WrappedHandle m s p d -> STM m (MessageWithParticipant p d)
 acceptProposal wh = do
     pm <- readTChan (whIncomingProposals wh)
     whs <- readTVar (whState wh)

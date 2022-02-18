@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies     #-}
 module Glow.Consensus.Local where
 
 import Data.Void (Void)
@@ -15,12 +13,11 @@ import Glow.Runtime.Interaction
 --
 -- This handles the IO for a consensus server using the
 -- given state machine.
-runStateMachine
-    :: (ConsensusServer srv i, Monad (ServerM srv))
+runStateMachine :: Monad m
     => state
-    -> (state -> MessageWithParticipant i -> Maybe state)
-    -> srv
-    -> ServerM srv Void
+    -> (state -> MessageWithParticipant p d -> Maybe state)
+    -> ConsensusServer m p d
+    -> m Void
 runStateMachine oldState transition server = do
     msg <- receive server
     case transition oldState msg of

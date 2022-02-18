@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies     #-}
 module Tests.Runtime.Interaction (tests) where
 
 import Glow.Prelude
@@ -15,12 +13,11 @@ tests :: Spec
 tests =
     describe "Glow.Runtime.Interaction" $ do
         describe "STM" $ do
-            let setup :: MonadConc m => m (STMServer m d, STMHandle m d, STMHandle m d)
-                setup = atomically $ do
-                    srv <- newServer
-                    h1 <- newHandle srv
-                    h2 <- newHandle srv
-                    pure (srv, h1, h2)
+            let setup = atomically $ do
+                    srv <- newSTMServer
+                    h1 <- toHandle <$> newSTMHandle srv
+                    h2 <- toHandle <$> newSTMHandle srv
+                    pure (toConsensusServer srv, h1, h2)
                 sendInt h val = submit h Message
                     { messageData = val
                     , messageAssetTransfers = M.empty
