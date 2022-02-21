@@ -45,11 +45,16 @@ common shared-opts
     , OverloadedStrings
   build-depends:
       base >=4.14 && <5
+    , aeson ^>=2.0.3
     , containers ^>=0.6.5
     , zenhack-prelude ^>=0.1
     , text ^>=1.2.5
     , megaparsec ^>=9.2.0
     , concurrency ^>=1.11.0
+
+    , plutus-contract
+    , plutus-ledger
+    , plutus-pab
   default-language:    Haskell2010
 
 library
@@ -66,6 +71,10 @@ library
     , Glow.Consensus.Local
     , Glow.Consensus.StateChannel
     , Glow.StateChannel
+
+    , Glow.Gerbil.Types
+    , Glow.Gerbil.Parser
+    , Glow.Gerbil.Client.Types
 
 executable glow
   import: shared-opts
