@@ -1,0 +1,4 @@
+# Trivial no-op stylish haskell config; we use ormolu. Putting
+# this here means that folks who have stylish-haskell in their
+# editor config won't have to fight with it.
+steps: []
