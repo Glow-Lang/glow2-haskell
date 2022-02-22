@@ -154,13 +154,20 @@ parseStatement = \case
     [ Atom _contractName,
       Builtin
         "@make-interaction"
-        ( List [Builtin "@list" participantNames]
+        ( List
+            [ Builtin
+                "@record"
+                [ Builtin "participants" [Builtin "@list" participantNames],
+                  Builtin "assets" [Builtin "@list" _assetNames]
+                  ]
+              ]
             : List argumentNames
             : Pair _startLabel _endLabel
             : interactions
           )
       ] ->
       DefineInteraction
+        -- TODO: use assetNames
         (bs8pack . parseName <$> participantNames)
         (bs8pack . parseName <$> argumentNames)
         (parseInteraction <$> interactions)
