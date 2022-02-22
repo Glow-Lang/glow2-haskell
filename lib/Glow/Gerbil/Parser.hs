@@ -185,19 +185,19 @@ parseStatement = \case
     Return $ var typeName
   Builtin "set-participant" [roleName] ->
     SetParticipant (var $ parseName roleName)
-  Builtin "expect-deposited" [Atom amountName] ->
-    ExpectDeposited (var amountName)
-  Builtin "expect-withdrawn" [Atom roleName, Atom amountName] ->
-    ExpectWithdrawn (var roleName) (var amountName)
+  Builtin "expect-deposited" [Builtin "@record" amounts] ->
+    ExpectDeposited (parseAssetMap amounts)
+  Builtin "expect-withdrawn" [Atom roleName, Builtin "@record" amounts] ->
+    ExpectWithdrawn (var roleName) (parseAssetMap amounts)
   Builtin "add-to-publish" _ ->
     Require $ Explicit (Boolean True)
-  Builtin "add-to-deposit" [Atom amountName] ->
-    AddToDeposit (var amountName)
-  Builtin "consensus:withdraw" [Atom roleName, Atom amountName] ->
-    AddToWithdraw (var roleName) (var amountName)
+  Builtin "add-to-deposit" [Builtin "@record" amounts] ->
+    AddToDeposit (parseAssetMap amounts)
+  Builtin "consensus:withdraw" [Atom roleName, Builtin "@record" amounts] ->
+    AddToWithdraw (var roleName) (parseAssetMap amounts)
   -- FIXME Compiler to plutus IR should separate consensus from participant statements.
-  Builtin "participant:withdraw" [Atom roleName, Atom amountName] ->
-    AddToWithdraw (var roleName) (var amountName)
+  Builtin "participant:withdraw" [Atom roleName, Builtin "@record" amounts] ->
+    AddToWithdraw (var roleName) (parseAssetMap amounts)
   -- NOTE: Does not seem to be used in the latest project.sexp output
   -- FIXME: Make sure this is not used and cleanup
   -- Builtin "add-to-withdraw" [Atom roleName, Atom amountName] ->
@@ -211,6 +211,12 @@ parseStatement = \case
     error "switch statements are not supported"
   unknown ->
     error $ "Unknown statement in contract body: " <> show unknown
+
+parseAssetMap :: [SExpr] -> AssetMap
+parseAssetMap = Map.fromList . map parseField
+  where
+    parseField (Builtin name [Atom amountName]) = (bs8pack name, var amountName)
+    parseField field = error $ "Malformed field in asset map: " <> show field
 
 parseExpression :: SExpr -> Expression
 parseExpression = \case

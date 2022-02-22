@@ -37,6 +37,8 @@ type FunctionMap = M.Map ByteString (ByteString, [Statement])
 
 type DatatypeMap = M.Map ByteString [(ByteString, Integer)]
 
+type AssetMap = M.Map ByteString GlowValueRef
+
 type Function = (ByteString, [Statement])
 
 type ExecutionPoint = ByteString
@@ -65,10 +67,10 @@ data Statement
   | DefineFunction ByteString ByteString [Statement]
   | DefineDatatype ByteString [(ByteString, Integer)]
   | SetParticipant GlowValueRef
-  | ExpectDeposited GlowValueRef
-  | ExpectWithdrawn GlowValueRef GlowValueRef
-  | AddToDeposit GlowValueRef
-  | AddToWithdraw GlowValueRef GlowValueRef
+  | ExpectDeposited AssetMap
+  | ExpectWithdrawn GlowValueRef AssetMap
+  | AddToDeposit AssetMap
+  | AddToWithdraw GlowValueRef AssetMap
   | Ignore Expression
   | Require GlowValueRef
   | Return GlowValueRef
