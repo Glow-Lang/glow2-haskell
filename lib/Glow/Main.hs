@@ -5,10 +5,22 @@ module Glow.Main (main) where
 
 import Glow.Gerbil.Parser (parseModule)
 import Glow.Prelude
-import Text.Megaparsec (parseTest)
-import Text.SExpression (def, parseSExpr)
+import Text.Megaparsec (errorBundlePretty, runParser)
+import qualified Text.SExpression as SExpr
 
 main :: IO ()
 main = do
   input <- getContents
-  parseTest (parseModule <$> parseSExpr def) input
+
+  -- `glow pass` puts the name of the file at the top of the output; strip
+  -- it off:
+  let trimmedInput = case lines input of
+        [] -> error "empty input"
+        (_ : xs) -> unlines xs
+
+  case runParser (SExpr.parseSExpr SExpr.def) "glow pass" trimmedInput of
+    Right sexpr ->
+      print (parseModule sexpr)
+    Left e -> do
+      putStrLn (errorBundlePretty e)
+      exitFailure
