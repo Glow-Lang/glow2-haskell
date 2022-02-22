@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -12,39 +13,47 @@
 
 module Glow.Gerbil.Types where
 
-import Data.Aeson (FromJSON, ToJSON)
+import Control.Monad.Fail (fail)
+import Data.Aeson (FromJSON (..), ToJSON (..))
+import qualified Data.ByteString.Base64.Lazy as B16
+import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString.Lazy.Char8 as LBS8
+import qualified Data.Map.Strict as M
 import GHC.Generics hiding (Datatype)
-import qualified Ledger as Ledger
-import qualified Ledger.Typed.Scripts as Scripts
-import qualified PlutusTx as PlutusTx
-import PlutusTx.AssocMap (Map)
-import PlutusTx.Prelude hiding (lookup, unless)
-import Schema (FormSchema (..), ToArgument, ToSchema (..))
-import qualified Prelude as P
+import Glow.Prelude
 
-data GlowConfig = GlowConfig
-  { gcTimeoutLength :: Ledger.Slot
-  }
-  deriving stock (Generic, P.Show)
-
--- TODO: what's a good default?
--- TODO: convert Glow dates and timestamps to slot numbers
-defaultTimeoutLength :: Ledger.Slot
--- defaultTimeoutLength = Ledger.Slot 100
-defaultTimeoutLength = Ledger.Slot 10000
+-- Wrapper, so we can define instances. (Do we actually need JSON instances?
+-- maybe just drop this?)
+newtype ByteString = WrappedByteString {toLBS :: LBS.ByteString}
+  deriving stock (Show, Read, Eq, Ord)
+  deriving newtype (IsString)
 
 -- TODO: variable cleanup, only keep live variables between each transaction
-type GlowContract = Map ExecutionPoint ([Statement], Maybe ExecutionPoint)
+type GlowContract = M.Map ExecutionPoint ([Statement], Maybe ExecutionPoint)
 
-type VariableMap = Map ByteString GlowValue
+type VariableMap = M.Map ByteString GlowValue
 
-type FunctionMap = Map ByteString (ByteString, [Statement])
+type FunctionMap = M.Map ByteString (ByteString, [Statement])
 
-type DatatypeMap = Map ByteString [(ByteString, Integer)]
+type DatatypeMap = M.Map ByteString [(ByteString, Integer)]
 
 type Function = (ByteString, [Statement])
 
 type ExecutionPoint = ByteString
+
+instance ToJSON ByteString where
+  toJSON =
+    toLBS
+      >>> B16.encode
+      >>> LBS8.unpack
+      >>> toJSON
+
+instance FromJSON ByteString where
+  parseJSON v = do
+    str <- parseJSON v
+    case B16.decode (LBS.pack str) of
+      Right bs -> pure (WrappedByteString bs)
+      Left e -> fail e
 
 -- TODO: support lambdas with CPS
 data Statement
@@ -62,41 +71,52 @@ data Statement
   | Ignore Expression
   | Require GlowValueRef
   | Return GlowValueRef
-  deriving stock (Generic, P.Eq, P.Show)
-  deriving (FromJSON, ToJSON)
+  deriving stock (Generic, Eq, Show)
 
-instance ToSchema Statement where
-  toSchema = FormSchemaString -- TODO: Is this the right way to serialize???
+-- deriving (FromJSON, ToJSON)
 
 data Expression
   = ExpectPublished ByteString
   | IsValidSignature GlowValueRef GlowValueRef GlowValueRef
   | Apply ByteString GlowValueRef
   | NoOp
-  deriving stock (Generic, P.Eq, P.Show)
-  deriving anyclass (FromJSON, ToJSON)
+  deriving stock (Generic, Eq, Show)
+
+-- deriving anyclass (FromJSON, ToJSON)
 
 -- TODO: how to encode expected type?
 data GlowValueRef
   = Explicit GlowValue
   | Variable ByteString
-  deriving stock (Generic, P.Eq, P.Show)
-  deriving anyclass (FromJSON, ToJSON)
+  deriving stock (Generic, Eq, Show)
+
+-- deriving anyclass (FromJSON, ToJSON)
 
 data GlowValue
   = Constructor ByteString Integer [GlowValue]
-  | PubKey Ledger.PubKey
-  | Signature Ledger.Signature
+  | PubKey LedgerPubKey
+  | Signature LedgerSignature
   | ByteString ByteString
   | Integer Integer
   | Boolean Bool
   | Unit
-  deriving stock (Generic, P.Eq, P.Show)
-  deriving anyclass (FromJSON, ToJSON) -- ToSchema, ToArgument)
+  deriving stock (Generic, Eq, Show)
 
-instance ToSchema GlowValue where
-  toSchema = FormSchemaString -- TODO: Is this the right way to serialize???
+-- deriving anyclass (FromJSON, ToJSON) -- ToSchema, ToArgument)
 
+newtype LedgerPubKey = LedgerPubKey ByteString
+  deriving stock (Generic, Eq, Show)
+  deriving newtype (IsString)
+
+-- deriving anyclass (FromJSON, ToJSON) -- ToSchema, ToArgument)
+
+newtype LedgerSignature = LedgerSignature ByteString
+  deriving stock (Generic, Eq, Show)
+  deriving newtype (IsString)
+
+-- deriving anyclass (FromJSON, ToJSON) -- ToSchema, ToArgument)
+
+{-
 data GlowDatum = GlowDatum
   { gdContract :: GlowContract,
     gdVariableMap :: VariableMap,
@@ -106,59 +126,5 @@ data GlowDatum = GlowDatum
     gdExecutionPoint :: Maybe ExecutionPoint,
     gdDeadline :: Ledger.Slot
   }
-  deriving stock (Generic, P.Eq, P.Show)
-
-newtype GlowRedeemer = GlowRedeemer (ExecutionPoint, VariableMap) -- TODO flatten this
-
-_PubKey :: GlowValue -> Maybe Ledger.PubKey
-_PubKey (PubKey pk) = Just pk
-_PubKey _ = Nothing
-
-_Signature :: GlowValue -> Maybe Ledger.Signature
-_Signature (Signature sig) = Just sig
-_Signature _ = Nothing
-
-_ByteString :: GlowValue -> Maybe ByteString
-_ByteString (ByteString bs) = Just bs
-_ByteString _ = Nothing
-
-_Integer :: GlowValue -> Maybe Integer
-_Integer (Integer i) = Just i
-_Integer _ = Nothing
-
-_Boolean :: GlowValue -> Maybe Bool
-_Boolean (Boolean b) = Just b
-_Boolean _ = Nothing
-
-_Unit :: GlowValue -> Maybe ()
-_Unit Unit = Just ()
-_Unit _ = Nothing
-
-data Glow
-
-instance Scripts.ValidatorTypes Glow where
-  type RedeemerType Glow = GlowRedeemer
-  type DatumType Glow = GlowDatum
-
--- TODO: Use makeIsDataIndexed / other stable representation.
--- PlutusTx.makeIsData ''Datatype
-PlutusTx.makeLift ''GlowValue
-PlutusTx.unstableMakeIsData ''GlowValue
-
-PlutusTx.makeLift ''GlowValueRef
-PlutusTx.unstableMakeIsData ''GlowValueRef
-
-PlutusTx.makeLift ''Expression
-PlutusTx.unstableMakeIsData ''Expression
-
-PlutusTx.makeLift ''Statement
-PlutusTx.unstableMakeIsData ''Statement
-
-PlutusTx.makeLift ''GlowDatum
-PlutusTx.unstableMakeIsData ''GlowDatum
-
-PlutusTx.makeLift ''GlowRedeemer
-PlutusTx.unstableMakeIsData ''GlowRedeemer
-
-PlutusTx.unstableMakeIsData ''GlowConfig
-PlutusTx.makeLift ''GlowConfig
+  deriving stock (Generic, Eq, Show)
+-}

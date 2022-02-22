@@ -5,13 +5,10 @@
 module Glow.Gerbil.Client.Types where
 
 import Data.Aeson hiding (Value)
-import Data.Text (Text)
+import qualified Data.Map.Strict as M
 import GHC.Generics
 import Glow.Gerbil.Types
-import qualified Ledger as Ledger
-import PlutusTx.AssocMap (Map)
-import PlutusTx.Prelude (ByteString)
-import Schema (ToArgument, ToSchema)
+import Glow.Prelude
 
 type SExprString = String
 
@@ -24,15 +21,15 @@ data RawCreateParams = RawCreateParams
     initialVariableMap :: SExprString, -- initial arguments to initialize contract interaction
     rawTimeoutLength :: Integer
   }
-  deriving stock (Generic, Prelude.Show)
-  deriving anyclass (FromJSON, ToJSON, ToSchema)
+  deriving stock (Generic, Show)
+  deriving anyclass (FromJSON, ToJSON)
 
 data RawMoveParams = RawMoveParams
   { rawVariableMap :: SExprString,
     rawEntryPoint :: String
   }
-  deriving stock (Generic, Prelude.Show)
-  deriving anyclass (FromJSON, ToJSON, ToSchema)
+  deriving stock (Generic, Show)
+  deriving anyclass (FromJSON, ToJSON)
 
 ------------------------------------------
 -- Representation within smart contract --
@@ -42,17 +39,20 @@ data RawMoveParams = RawMoveParams
 
 data CreateParams = CreateParams
   { datatypes :: DatatypeMap,
-    participants :: Map ByteString Ledger.PubKey, -- TODO: type synonym for this
+    participants :: M.Map ByteString LedgerPubKey, -- TODO: type synonym for this
     arguments :: VariableMap,
     contract :: GlowContract, -- consensus program
     timeoutLength :: Integer
   }
-  deriving stock (Generic, Prelude.Eq, Prelude.Show)
-  deriving anyclass (FromJSON, ToJSON, ToSchema)
+  deriving stock (Generic, Eq, Show)
+
+-- TODO: deriving currently fails since our ByteString wrapper doesn't implement FromJSONKey
+-- deriving anyclass (FromJSON, ToJSON)
 
 data MoveParams = MoveParams
   { variableMap :: VariableMap,
     entryPoint :: String
   }
-  deriving stock (Generic, Prelude.Eq, Prelude.Show)
-  deriving anyclass (FromJSON, ToJSON, ToSchema)
+  deriving stock (Generic, Eq, Show)
+
+-- deriving anyclass (FromJSON, ToJSON)
