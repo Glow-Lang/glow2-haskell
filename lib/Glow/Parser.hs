@@ -24,8 +24,8 @@ whitespace =
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme whitespace
 
-symbol :: Text -> Parser Text
-symbol = L.symbol whitespace
+symbol :: Text -> Parser ()
+symbol = void . L.symbol whitespace
 
 -- identifiers
 ident :: Parser Symbol
@@ -55,7 +55,7 @@ litNat :: Parser Natural
 litNat = lexeme $ litNatHex <|> litNatDecimal
   where
     litNatHex = do
-      string "0x"
+      void $ string "0x"
       -- XXX this is somewhat more permissive than the old scheme parser,
       -- which did not allow leading zeros or capital letters.
       ds <- takeWhile1P Nothing isHexDigit
@@ -83,7 +83,7 @@ litStr = lexeme $ do
           escapeSequence
         ]
     escapeSequence = do
-      char '\\'
+      void $ char '\\'
       c <- anySingle
       case c of
         '\\' -> pure $ LT.pack [c]
