@@ -60,7 +60,7 @@ data Statement
   = Label ByteString
   | DebugLabel ByteString
   | Declare ByteString
-  | DefineInteraction [ByteString] [ByteString] [(ByteString, [Statement])]
+  | DefineInteraction InteractionDef
   | Define ByteString Expression
   | DefineFunction ByteString ByteString [Statement]
   | DefineDatatype ByteString [(ByteString, Integer)]
@@ -72,6 +72,16 @@ data Statement
   | Ignore Expression
   | Require GlowValueRef
   | Return GlowValueRef
+  deriving stock (Generic, Eq, Show)
+
+-- deriving (FromJSON, ToJSON)
+
+data InteractionDef = InteractionDef
+  { idParticipantNames :: [ByteString],
+    idAssetNames :: [ByteString],
+    idArgumentNames :: [ByteString],
+    idInteractions :: [(ByteString, [Statement])]
+  }
   deriving stock (Generic, Eq, Show)
 
 -- deriving (FromJSON, ToJSON)

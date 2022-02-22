@@ -160,7 +160,7 @@ parseStatement = \case
             [ Builtin
                 "@record"
                 [ Builtin "participants" [Builtin "@list" participantNames],
-                  Builtin "assets" [Builtin "@list" _assetNames]
+                  Builtin "assets" [Builtin "@list" assetNames]
                   ]
               ]
             : List argumentNames
@@ -169,10 +169,12 @@ parseStatement = \case
           )
       ] ->
       DefineInteraction
-        -- TODO: use assetNames
-        (bs8pack . parseName <$> participantNames)
-        (bs8pack . parseName <$> argumentNames)
-        (parseInteraction <$> interactions)
+        InteractionDef
+          { idParticipantNames = bs8pack . parseName <$> participantNames,
+            idAssetNames = bs8pack . parseName <$> assetNames,
+            idArgumentNames = bs8pack . parseName <$> argumentNames,
+            idInteractions = parseInteraction <$> interactions
+          }
   Builtin "def" [Atom variableName, Builtin "λ" (Atom argName : body)] ->
     DefineFunction (bs8pack variableName) (bs8pack argName) (parseStatement <$> body)
   Builtin "def" [Atom variableName, sexpr] ->
@@ -329,15 +331,21 @@ extractPrograms statements =
         }
 
     processHeaderStatement = \case
-      DefineInteraction participants arguments interactions -> do
-        modify $ \program -> program {_participants = participants, _arguments = arguments}
-        let consensusProgram = processProgram "consensus" interactions
-        let participantPrograms = (\participant -> processProgram participant interactions) <$> participants
-        modify $ \program ->
-          program
-            { _consensusProgram = snd consensusProgram,
-              _participantPrograms = Map.fromList participantPrograms
-            }
+      DefineInteraction
+        InteractionDef
+          { idParticipantNames = participants,
+            idArgumentNames = arguments,
+            idAssetNames = _, -- TODO: do something with assets.
+            idInteractions = interactions
+          } -> do
+          modify $ \program -> program {_participants = participants, _arguments = arguments}
+          let consensusProgram = processProgram "consensus" interactions
+          let participantPrograms = (\participant -> processProgram participant interactions) <$> participants
+          modify $ \program ->
+            program
+              { _consensusProgram = snd consensusProgram,
+                _participantPrograms = Map.fromList participantPrograms
+              }
       _ ->
         pure ()
 
