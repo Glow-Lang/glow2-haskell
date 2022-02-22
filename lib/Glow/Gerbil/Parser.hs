@@ -141,6 +141,8 @@ parseStatement :: SExpr -> Statement
 parseStatement = \case
   Builtin "@label" [Atom name] ->
     Label $ bs8pack name
+  Builtin "@debug-label" [Atom name] ->
+    DebugLabel $ bs8pack name
   Builtin "deftype" [Atom _name, _typeDefinition] ->
     error "monomorphic type not supported"
   Builtin "deftype" [List (Atom _name : _typeVariables), _typeDefinition] ->

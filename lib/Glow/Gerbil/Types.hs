@@ -58,6 +58,7 @@ instance FromJSON ByteString where
 -- TODO: support lambdas with CPS
 data Statement
   = Label ByteString
+  | DebugLabel ByteString
   | Declare ByteString
   | DefineInteraction [ByteString] [ByteString] [(ByteString, [Statement])]
   | Define ByteString Expression
