@@ -7,6 +7,7 @@ import Glow.Gerbil.Parser (parseModule)
 import Glow.Prelude
 import Text.Megaparsec (errorBundlePretty, runParser)
 import qualified Text.SExpression as SExpr
+import Text.Show.Pretty (pPrint)
 
 main :: IO ()
 main = do
@@ -20,7 +21,7 @@ main = do
 
   case runParser (SExpr.parseSExpr SExpr.def) "glow pass" trimmedInput of
     Right sexpr ->
-      print (parseModule sexpr)
+      pPrint (parseModule sexpr)
     Left e -> do
       putStrLn (errorBundlePretty e)
       exitFailure

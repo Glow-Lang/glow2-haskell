@@ -54,6 +54,7 @@ common shared-opts
     , megaparsec >=6.5 && <9.3
     , mtl ^>=2.2.2
     , concurrency ^>=1.11.0
+    , pretty-show ^>=1.10
     , prettyprinter ^>=1.7.1
     , sexpr-parser ^>=0.2.0
     -- TODO: consider swapping out lens for microlens, smaller dep footprint:
