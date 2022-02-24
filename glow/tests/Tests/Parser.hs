@@ -1,7 +1,7 @@
 module Tests.Parser where
 
 import qualified Data.Text.Lazy as LT
-import Glow.Ast
+import Glow.Ast.Surface
 import Glow.Parser
 import Glow.Prelude
 import Test.Hspec

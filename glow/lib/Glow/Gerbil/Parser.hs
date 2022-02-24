@@ -10,6 +10,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 
+-- | Parser for the output of the Scheme implementation's `project`
+-- phase.
 module Glow.Gerbil.Parser where
 
 import Control.Lens (over, _1)

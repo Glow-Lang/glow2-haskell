@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
--- Glow Ast.
-module Glow.Ast where
+-- | AST fo  Glow's surface syntax.
+module Glow.Ast.Surface where
 
 import qualified Data.Text.Lazy as LT
 import Glow.Prelude

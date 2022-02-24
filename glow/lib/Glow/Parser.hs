@@ -1,9 +1,10 @@
+-- | Parser for Glow's surface syntax
 module Glow.Parser where
 
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as LT
 import Data.Void (Void)
-import Glow.Ast
+import Glow.Ast.Surface
 import Glow.Prelude hiding (many)
 import Numeric.Natural (Natural)
 import Text.Megaparsec

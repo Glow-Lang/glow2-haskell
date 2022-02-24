@@ -67,7 +67,7 @@ library
   exposed-modules:
       Glow.Main
 
-    , Glow.Ast
+    , Glow.Ast.Surface
     , Glow.Parser
     , Glow.Prelude
     , Glow.Runtime.Interaction
