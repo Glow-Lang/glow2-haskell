@@ -18,6 +18,9 @@
 --   flow than effect-free operations (helps with inserting transaction
 --   boundaries). Functions which have side-effects are not type compatible
 --   with those that do not.
+--
+-- N.B. This is still a little half-baked; Ian is thinking through the
+-- details.
 module Glow.Ast.IR1 where
 
 import qualified Data.Map as M
