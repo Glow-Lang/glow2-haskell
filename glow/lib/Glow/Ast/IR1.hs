@@ -19,6 +19,10 @@
 --   boundaries). Functions which have side-effects are not type compatible
 --   with those that do not.
 --
+-- NOTE: right now we have types in here, but these are lost by the end
+-- of the `project` phase. Ideally we would not lose the types; these
+-- are useful for consistency checks and for handling representation.
+--
 -- N.B. This is still a little half-baked; Ian is thinking through the
 -- details.
 module Glow.Ast.IR1 where
