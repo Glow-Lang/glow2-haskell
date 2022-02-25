@@ -50,8 +50,15 @@ data FunDef = FunDef
     -- | Return type:
     fdRetType :: Type,
     -- | Function body:
-    fdBody :: [Stmt]
+    fdBody :: FunBody
   }
+  deriving (Show, Read, Eq)
+
+data FunBody
+  = -- | A pure function:
+    FBPure (Stmt Expr)
+  | -- | An effectful function:
+    FBEff (Stmt EffectEnd)
   deriving (Show, Read, Eq)
 
 -- | A type.
@@ -72,18 +79,39 @@ data FPtrType = FPtrType
   }
   deriving (Show, Read, Eq)
 
+-- | Return the function pointer type for a definition.
+getFunDefType :: FunDef -> FPtrType
+getFunDefType fd =
+  FPtrType
+    { fptCaptures = map pType (fdCaptures fd),
+      fptFuncType =
+        FuncType
+          { ftParams = map pType (fdParams fd),
+            ftRetType = fdRetType fd,
+            ftEffectful = case fdBody fd of
+              FBPure _ -> False
+              FBEff _ -> True
+          }
+    }
+
 data FuncType = FuncType
   { ftParams :: [Type],
-    ftResult :: Type,
+    ftRetType :: Type,
     -- | Can this function have side-effects?
     ftEffectful :: !Bool
   }
   deriving (Show, Read, Eq)
 
-data Stmt
-  = STLet Let
-  | StEffect Effect Var -- Effect, continuation.
-  | StReturn Expr
+data Stmt end
+  = STLet (Let end)
+  | StEnd end
+  deriving (Show, Read, Eq)
+
+-- | The last statement in an effectful function.
+data EffectEnd = EffectEnd
+  { steEffect :: Effect,
+    steContinuation :: Var
+  }
   deriving (Show, Read, Eq)
 
 data Asset = Asset
@@ -100,10 +128,10 @@ data Effect
   | EffWithdraw [(Asset, Participant)]
   deriving (Show, Read, Eq)
 
-data Let = Let
+data Let end = Let
   { lVar :: Var,
     lDef :: Expr,
-    lBody :: Stmt
+    lBody :: Stmt end
   }
   deriving (Show, Read, Eq)
 
