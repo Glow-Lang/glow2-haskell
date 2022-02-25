@@ -112,8 +112,8 @@ data Stmt end
 
 -- | The last statement in an effectful function.
 data EffectEnd = EffectEnd
-  { steEffect :: Effect,
-    steContinuation :: Var
+  { eeEffect :: Effect,
+    eeContinuation :: Var
   }
   deriving (Show, Read, Eq)
 
