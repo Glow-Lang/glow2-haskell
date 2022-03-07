@@ -1,6 +1,6 @@
--- | This module defines an AST for Glow's first intermediate
--- representation this side of the fronted. We convert the data types
--- in Glow.Gerbil.Types to this form before further translation.
+-- | This module defines an AST for Glow's last-leg intermediate
+-- representation, before generating LLVM code. We convert the data
+-- types in Glow.Gerbil.Types to this form before further translation.
 --
 -- Some salient properties:
 --
