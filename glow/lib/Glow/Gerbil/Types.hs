@@ -57,6 +57,27 @@ instance FromJSON ByteString where
       Right bs -> pure (WrappedByteString bs)
       Left e -> fail e
 
+-- | An MLsub type, as emitted by the frontend.
+data Type
+  = TyArrow [Type] Type
+  | TyName ByteString
+  | TyNameSubtype ByteString Type
+  | TyTuple [Type]
+  | -- | TyUnknown is a placeholder until we actually support parsing everything;
+    -- it is convienient to be able print out a larger type which has un-parsable
+    -- bits, so we can see what of a program we handle and what we don't.
+    TyUnknown ByteString
+  -- TODO:
+  --
+  -- - [x] type:name
+  -- - [x] type:name-subtype
+  -- - [ ] type:var
+  -- - [ ] type:app
+  -- - [ ] type:tuple
+  -- - [ ] type:record
+  -- - [x] type:arrow
+  deriving (Show)
+
 -- TODO: support lambdas with CPS
 data Statement
   = Label ByteString

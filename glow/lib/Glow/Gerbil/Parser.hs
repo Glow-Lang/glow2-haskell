@@ -403,6 +403,32 @@ extractPrograms statements =
                 contract
          in (curParticipant, curLabel, newContract)
 
+parseTypeTable :: SExpr -> Map ByteString Type
+parseTypeTable = parseTable parseType
+
+parseTable :: (SExpr -> a) -> SExpr -> Map ByteString a
+parseTable p (List (Atom "hash" : kvs)) = Map.fromList $ map (parseKV p) kvs
+parseTable _ sexp = error $ "parseTable: S-expression is not a hash map: " <> show sexp
+
+parseKV :: (SExpr -> a) -> SExpr -> (ByteString, a)
+parseKV p (List [Atom k, v]) = (bs8pack k, p v)
+parseKV p sexp =
+  ( bs8pack $ "parseKV: S-expression is not a key-value pair: " <> show sexp,
+    (p (List []))
+  )
+
+parseType :: SExpr -> Type
+parseType (List [Atom "type:arrow", List (Atom "@list" : params), result]) =
+  TyArrow (map parseType params) (parseType result)
+parseType (List [Atom "type:name", List [Atom "quote", Atom name]]) =
+  TyName (bs8pack name)
+parseType (List [Atom "type:name-subtype", List [Atom "quote", Atom name], typ]) =
+  TyNameSubtype (bs8pack name) (parseType typ)
+parseType (List [Atom "type:tuple", List (Atom "@list" : elts)]) =
+  TyTuple (map parseType elts)
+parseType sexp =
+  TyUnknown (bs8pack $ show sexp)
+
 var :: String -> GlowValueRef
 var = Variable . bs8pack
 
