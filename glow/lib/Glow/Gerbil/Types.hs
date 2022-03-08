@@ -25,8 +25,11 @@ import Glow.Prelude
 -- Wrapper, so we can define instances. (Do we actually need JSON instances?
 -- maybe just drop this?)
 newtype ByteString = WrappedByteString {toLBS :: LBS.ByteString}
-  deriving stock (Show, Read, Eq, Ord)
+  deriving stock (Eq, Ord)
   deriving newtype (IsString)
+
+instance Show ByteString where
+  show = show . toLBS
 
 -- TODO: variable cleanup, only keep live variables between each transaction
 type GlowContract = M.Map ExecutionPoint ([Statement], Maybe ExecutionPoint)
