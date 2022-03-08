@@ -14,7 +14,6 @@
 -- phase.
 module Glow.Gerbil.Parser where
 
-import Control.Lens (over, _1)
 import Control.Monad.State
 import Data.Aeson (eitherDecode)
 import qualified Data.ByteString.Lazy.Char8 as LBS8
@@ -31,6 +30,7 @@ import Glow.Gerbil.Client.Types
   )
 import Glow.Gerbil.Types as Glow
 import Glow.Prelude
+import Lens.Micro (over, _1)
 import Prettyprinter
 import Text.Megaparsec hiding (Label, State)
 import Text.SExpression as SExpr
