@@ -57,6 +57,7 @@ common shared-opts
     , pretty-show ^>=1.10
     , prettyprinter ^>=1.7.1
     , sexpr-parser ^>=0.2.1
+    , typed-process ^>=0.2.8
     -- TODO: consider swapping out lens for microlens, smaller dep footprint:
     , lens ^>=5.1
   default-language:    Haskell2010
@@ -79,6 +80,7 @@ library
 
     , Glow.Gerbil.Types
     , Glow.Gerbil.Parser
+    , Glow.Gerbil.ImportSExpr
     , Glow.Gerbil.Client.Types
 
 executable glow
