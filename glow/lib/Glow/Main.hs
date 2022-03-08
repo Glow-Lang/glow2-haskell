@@ -21,7 +21,7 @@ data FrontEndParams = FrontEndParams
 
 data FrontEndData = FrontEndData
   { fedProject :: [GT.Statement],
-    fedMethodResolve :: [ImportSExpr.Output]
+    fedTypeTable :: ImportSExpr.Output
   }
   deriving (Show, Eq)
 
@@ -52,15 +52,15 @@ frontEndData params = do
   methodResolve <- pass "method-resolve"
   pure $ do
     stmtss <- map (parseModule . ImportSExpr.oSExpr) <$> project
-    let stmts = case stmtss of
-          [s] -> s
-          _ -> error ("wrong number of outputs: " <> show (length stmtss))
     resolve <- methodResolve
-    Right
-      FrontEndData
-        { fedProject = stmts,
-          fedMethodResolve = resolve
-        }
+    case (stmtss, resolve) of
+      ([stmts], (_ : types : _)) ->
+        Right
+          FrontEndData
+            { fedProject = stmts,
+              fedTypeTable = types
+            }
+      _ -> error ("wrong number of outputs: " <> show (length stmtss, length resolve))
 
 main :: IO ()
 main = do
