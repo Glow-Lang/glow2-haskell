@@ -1,13 +1,8 @@
 module Glow.Main (main) where
 
-import qualified Data.ByteString.Lazy as LBS
-import qualified Data.Text as T
-import Data.Void (Void)
 import qualified Glow.Gerbil.ImportSExpr as ISExp
-import Glow.Gerbil.Parser (parseModule)
+import Glow.Gerbil.Parser (extractPrograms)
 import Glow.Prelude
-import Text.Megaparsec (ParseErrorBundle, errorBundlePretty, runParser)
-import qualified Text.SExpression as SExpr
 import Text.Show.Pretty (pPrint)
 
 main :: IO ()
@@ -21,4 +16,6 @@ main = do
         }
   case fed of
     Left e -> putStrLn (ISExp.formatError e)
-    Right v -> pPrint v
+    Right v -> do
+      pPrint v
+      pPrint (extractPrograms (ISExp.fedProject v))

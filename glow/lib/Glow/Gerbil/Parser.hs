@@ -325,6 +325,7 @@ data GlowProgram = GlowProgram
     _consensusProgram :: GlowContract,
     _participantPrograms :: Map ByteString GlowContract
   }
+  deriving (Show)
 
 extractPrograms :: [Statement] -> GlowProgram
 extractPrograms statements =
