@@ -47,7 +47,7 @@ common shared-opts
       base >=4.14 && <5
     , aeson ^>=2.0.3
     , base64-bytestring ^>=1.2.1
-    , bytestring ^>=0.10.12
+    , bytestring >=0.10.2 && <0.12
     , containers ^>=0.6.5
     , zenhack-prelude ^>=0.1
     , text ^>=1.2.5

@@ -1,0 +1,3 @@
+[submodule "sexpr-parser"]
+	path = sexpr-parser
+	url = git@github.com:glow-lang/sexpr-parser
