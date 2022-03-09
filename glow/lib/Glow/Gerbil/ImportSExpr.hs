@@ -13,8 +13,6 @@ where
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
-import Data.Text.Lazy (Text)
-import qualified Data.Text.Lazy as LT
 import Data.Void (Void)
 import Glow.Gerbil.Parser (parseModule)
 import qualified Glow.Gerbil.Types as GT

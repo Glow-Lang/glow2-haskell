@@ -16,13 +16,14 @@
 module Glow.StateChannel where
 
 import Control.Concurrent.Classy
+import Data.Kind (Type)
 import qualified Data.Map.Strict as M
 import qualified Glow.Consensus.StateChannel as SC
 import Glow.Prelude
 import Glow.Runtime.Interaction
 import Numeric.Natural (Natural)
 
-data Proposer (m :: * -> *) s i = Proposer
+data Proposer (m :: Type -> Type) s i = Proposer
 
 propose :: MonadConc m => Proposer m s p -> SC.Agreement s p -> m (SC.Agreement s p)
 propose _ = pure

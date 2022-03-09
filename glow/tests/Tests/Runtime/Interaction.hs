@@ -37,7 +37,6 @@ tests =
           r0 <- receive srv
           r1 <- receive srv
           r2 <- receive srv
-          let checkData r val = messageData (mwpMessage r) `shouldBe` val
           r0 `dataShouldBe` 0
           r1 `dataShouldBe` 1
           r2 `dataShouldBe` 2
