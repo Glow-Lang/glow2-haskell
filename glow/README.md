@@ -24,6 +24,18 @@ Using more advanced language features is OK, but make sure they're
 actually buying you something that's worth the extra complexity &
 cognitive load. Err on the side of keeping it simple.
 
+## Imports
+
+As much as possible, import modules qualified, or import individual
+items from modules; do *not* import whole modules unqualified. This
+makes it easier to keep track of where identifiers are coming from.
+
+For some kinds of code it may make sense to violate this for one or
+two imports, e.g. a module defining a parser might want to just import
+everything from several modules from `megaparsec`. But avoid having
+multiple unrelated unqualified imports in the same module; it gets hard
+to follow quickly.
+
 ## Formatting
 
 Use `ormolu` to auto-format the code. `scripts/format.sh` will do
