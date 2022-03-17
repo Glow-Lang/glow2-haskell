@@ -77,7 +77,7 @@ data Type
   | TTuple [Type]
   deriving (Show, Read, Eq)
 
--- | A type for a "function pointer," named by analagy to C; these are
+-- | A type for a "function pointer," named by analogy to C; these are
 -- references to code, and cannot be constructed at runtime, but can
 -- be used to construct closures using 'ExCapture'.
 data FPtrType = FPtrType
