@@ -25,7 +25,7 @@
 --
 -- N.B. This is still a little half-baked; Ian is thinking through the
 -- details.
-module Glow.Ast.IR1 where
+module Glow.Ast.LastLeg where
 
 import qualified Data.Map as M
 import qualified Data.Text.Lazy as LT
