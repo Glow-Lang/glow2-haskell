@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 -- | This module defines an AST for Glow's last-leg intermediate
 -- representation, before generating LLVM code. We convert the data
 -- types in Glow.Gerbil.Types to this form before further translation.
@@ -44,7 +46,7 @@ data Module = Module
 
 -- | A variable
 newtype Var = Var LT.Text
-  deriving (Show, Read, Eq, Ord)
+  deriving (Show, Read, Eq, Ord, IsString)
 
 -- | A function definition. In addition to the parameters,
 -- return type, and body that exist in the surface language,
