@@ -8,7 +8,7 @@ We use plain old cabal to build glow (not stack). To build:
 cabal build all
 ```
 
-We currently develop using the GHC 8.10.x series; if your distribution
+We currently develop using the GHC 9.2.x series; if your distribution
 ships something different, we recommend using `ghcup` to get an
 appropriate version of the compiler.
 
