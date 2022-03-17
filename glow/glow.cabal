@@ -74,6 +74,7 @@ library
     , Glow.Prelude
     , Glow.Runtime.Interaction
     , Glow.Runtime.Interaction.STM
+    , Glow.Translate.LastLegToLLVM
     , Glow.Consensus.Local
     , Glow.Consensus.StateChannel
     , Glow.StateChannel
@@ -100,3 +101,4 @@ test-suite tests
   other-modules:
       Tests.Parser
     , Tests.Runtime.Interaction
+    , Tests.LastLegToLLVM
