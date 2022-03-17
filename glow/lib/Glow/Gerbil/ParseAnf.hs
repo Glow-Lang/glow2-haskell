@@ -56,14 +56,14 @@ parseStatement = \case
             aidArgumentNames = bs8pack . parseName <$> argumentNames,
             aidBody = parseStatement <$> body
           }
-  Builtin "def" [Atom variableName, Builtin "λ" (Atom argName : body)] ->
-    DefineFunction (bs8pack variableName) (bs8pack argName) (parseStatement <$> body)
+  Builtin "def" [Atom variableName, Builtin "λ" (List argNames : body)] ->
+    DefineFunction (bs8pack variableName) (bs8pack . parseName <$> argNames) (parseStatement <$> body)
   Builtin "def" [Atom variableName, sexpr] ->
     Define (bs8pack variableName) (parseExpression sexpr)
   Builtin "ignore!" [sexpr] ->
     Ignore (parseExpression sexpr)
   Builtin "return" [sexpr] ->
-    Return (parseTrivialExpression sexpr)
+    Return (parseExpression sexpr)
   Builtin "@" [Atom roleName, s] ->
     AtParticipant (var roleName) (parseStatement s)
   Builtin "set-participant" [roleName] ->

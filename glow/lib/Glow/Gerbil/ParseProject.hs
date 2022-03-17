@@ -169,14 +169,14 @@ parseStatement = \case
             pidArgumentNames = bs8pack . parseName <$> argumentNames,
             pidInteractions = parseInteraction <$> interactions
           }
-  Builtin "def" [Atom variableName, Builtin "λ" (Atom argName : body)] ->
-    DefineFunction (bs8pack variableName) (bs8pack argName) (parseStatement <$> body)
+  Builtin "def" [Atom variableName, Builtin "λ" (List argNames : Pair _startLabel _endLabel : body)] ->
+    DefineFunction (bs8pack variableName) (bs8pack . parseName <$> argNames) (parseStatement <$> body)
   Builtin "def" [Atom variableName, sexpr] ->
     Define (bs8pack variableName) (parseExpression sexpr)
   Builtin "ignore!" [sexpr] ->
     Ignore (parseExpression sexpr)
   Builtin "return" [sexpr] ->
-    Return (parseTrivialExpression sexpr)
+    Return (parseExpression sexpr)
   Builtin "set-participant" [roleName] ->
     SetParticipant (var $ parseName roleName)
   Builtin "expect-deposited" [Builtin "@record" amounts] ->

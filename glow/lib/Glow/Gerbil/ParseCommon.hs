@@ -53,12 +53,20 @@ parseAssetMap = Map.fromList . map parseField
 
 parseExpression :: SExpr -> Expression
 parseExpression = \case
-  Builtin "expect-published" [variableName] ->
+  Builtin "expect-published" [Builtin "quote" [variableName]] ->
     ExpectPublished (bs8pack $ parseName variableName)
-  Builtin "@app" [Atom "isValidSignature", Atom roleName, Atom digestVariableName, Atom signatureVariableName] ->
-    IsValidSignature (var roleName) (var digestVariableName) (var signatureVariableName)
-  Builtin "sign" [Atom _variableName] ->
-    NoOp
+  Builtin "@app" (fun : args) ->
+    AppExpr (parseTrivialExpression fun) (parseTrivialExpression <$> args)
+  Builtin "==" [a, b] ->
+    EqlExpr (parseTrivialExpression a) (parseTrivialExpression b)
+  Builtin "sign" [arg] ->
+    Sign (parseTrivialExpression arg)
+  Builtin "digest" args ->
+    Digest (parseTrivialExpression <$> args)
+  u@(Builtin "@tuple" []) -> TrvExpr (parseTrivialExpression u)
+  v@(Number _) -> TrvExpr (parseTrivialExpression v)
+  s@(String _) -> TrvExpr (parseTrivialExpression s)
+  x@(Atom _) -> TrvExpr (parseTrivialExpression x)
   unknown ->
     error $ "Unknown expression in contract body: " <> show unknown
 
@@ -84,5 +92,7 @@ parseTrivialExpression :: SExpr -> GlowValueRef
 parseTrivialExpression = \case
   Atom name            -> var name
   List [Atom "@tuple"] -> Explicit Unit
+  Number n             -> Explicit (Integer n)
+  String s             -> Explicit (ByteString (bs8pack s))
   unknown              ->
     error $ "Unknown expression in trivial-expression position: " <> show unknown

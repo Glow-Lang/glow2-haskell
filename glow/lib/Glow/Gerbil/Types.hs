@@ -85,10 +85,9 @@ data Type
 data Statement interactionDef
   = Label ByteString
   | DebugLabel ByteString
-  | Declare ByteString
   | DefineInteraction interactionDef
   | Define ByteString Expression
-  | DefineFunction ByteString ByteString [(Statement interactionDef)]
+  | DefineFunction ByteString [ByteString] [(Statement interactionDef)]
   | DefineDatatype ByteString [(ByteString, Integer)]
   | AtParticipant GlowValueRef (Statement interactionDef)
   | SetParticipant GlowValueRef
@@ -97,7 +96,7 @@ data Statement interactionDef
   | Withdraw GlowValueRef AssetMap
   | Ignore Expression
   | Require GlowValueRef
-  | Return GlowValueRef
+  | Return Expression
   deriving stock (Generic, Eq, Show)
 
 -- deriving (FromJSON, ToJSON)
@@ -128,9 +127,11 @@ type ProjectStatement = Statement ProjectInteractionDef
 
 data Expression
   = ExpectPublished ByteString
-  | IsValidSignature GlowValueRef GlowValueRef GlowValueRef
-  | Apply ByteString GlowValueRef
-  | NoOp
+  | Digest [GlowValueRef]
+  | Sign GlowValueRef
+  | EqlExpr GlowValueRef GlowValueRef
+  | AppExpr GlowValueRef [GlowValueRef]
+  | TrvExpr GlowValueRef
   deriving stock (Generic, Eq, Show)
 
 -- deriving anyclass (FromJSON, ToJSON)
