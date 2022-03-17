@@ -14,7 +14,8 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Data.Void (Void)
-import Glow.Gerbil.Parser (parseModule)
+import Glow.Gerbil.ParseAnf as ParseAnf
+import Glow.Gerbil.ParseProject as ParseProject
 import qualified Glow.Gerbil.Types as GT
 import Glow.Prelude hiding (many)
 import qualified System.Process.Typed as P
@@ -53,7 +54,9 @@ data FrontEndParams = FrontEndParams
 -- | Data extracted from the frontend.
 data FrontEndData = FrontEndData
   { -- | Output of @glow pass project@
-    fedProject :: [GT.Statement],
+    fedProject :: [GT.ProjectStatement],
+    -- | Output of @glow pass anf@
+    fedAnf :: [GT.AnfStatement],
     -- | Type table, extracted from the output of @glow pass method-resolve@.
     -- TODO: parse this into a more strongly typed form, rather than just
     -- keeping it as an s-expression.
@@ -86,15 +89,18 @@ frontEndData params = do
           Left e -> Left (SexpParseError e)
           Right v -> Right v
   project <- pass "project"
+  anf <- pass "anf"
   methodResolve <- pass "method-resolve"
   pure $ do
-    stmtss <- map (parseModule . oSExpr) <$> project
+    projectStmtss <- map (ParseProject.parseModule . oSExpr) <$> project
+    anfStmtss <- map (ParseAnf.parseModule . oSExpr) <$> anf
     resolve <- methodResolve
-    case (stmtss, resolve) of
-      ([stmts], (_ : types : _)) ->
+    case (projectStmtss, anfStmtss, resolve) of
+      ([projectStmts], [anfStmts], (_ : types : _)) ->
         Right
           FrontEndData
-            { fedProject = stmts,
+            { fedProject = projectStmts,
+              fedAnf = anfStmts,
               fedTypeTable = types
             }
-      _ -> error ("wrong number of outputs: " <> show (length stmtss, length resolve))
+      _ -> error ("wrong number of outputs: " <> show (length projectStmtss, length anfStmtss, length resolve))

@@ -78,7 +78,9 @@ library
     , Glow.StateChannel
 
     , Glow.Gerbil.Types
-    , Glow.Gerbil.Parser
+    , Glow.Gerbil.ParseAnf
+    , Glow.Gerbil.ParseCommon
+    , Glow.Gerbil.ParseProject
     , Glow.Gerbil.ImportSExpr
     , Glow.Gerbil.Client.Types
 

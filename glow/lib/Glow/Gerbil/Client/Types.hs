@@ -41,7 +41,7 @@ data CreateParams = CreateParams
   { datatypes :: DatatypeMap,
     participants :: M.Map ByteString LedgerPubKey, -- TODO: type synonym for this
     arguments :: VariableMap,
-    contract :: GlowContract, -- consensus program
+    contract :: GlowProjectContract, -- consensus program
     timeoutLength :: Integer
   }
   deriving stock (Generic, Eq, Show)

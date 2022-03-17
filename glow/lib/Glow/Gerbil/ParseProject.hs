@@ -12,7 +12,7 @@
 
 -- | Parser for the output of the Scheme implementation's `project`
 -- phase.
-module Glow.Gerbil.Parser where
+module Glow.Gerbil.ParseProject where
 
 import Control.Monad.State
 import Data.Aeson (eitherDecode)
@@ -20,27 +20,19 @@ import qualified Data.ByteString.Lazy.Char8 as LBS8
 import Data.Either (fromRight)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Void
 import Glow.Gerbil.Client.Types
   ( CreateParams (..),
     MoveParams (..),
     RawCreateParams (..),
     RawMoveParams (..),
-    SExprString,
   )
 import Glow.Gerbil.Types as Glow
+import Glow.Gerbil.ParseCommon
 import Glow.Prelude
-import Lens.Micro (over, _1)
 import Prettyprinter
 import Text.Megaparsec hiding (Label, State)
 import Text.SExpression as SExpr
 import Prelude (init, last, lookup)
-
-pattern Builtin :: String -> [SExpr] -> SExpr
-pattern Builtin head tail = List (Atom head : tail)
-
-pattern Pair :: String -> String -> SExpr
-pattern Pair fst snd = List [Atom fst, Atom snd]
 
 -- TODO tests for toplevel parsers
 -- TODO handle / propagate error case
@@ -119,7 +111,7 @@ parseCommandDebug = do
     Left err ->
       errorBundlePretty err
 
-prettyContract :: GlowContract -> Doc ann
+prettyContract :: GlowProjectContract -> Doc ann
 prettyContract glowContract =
   indent 2 $
     vsep $
@@ -131,7 +123,7 @@ prettyContract glowContract =
       )
         <$> Map.toList glowContract
 
-parseModule :: SExpr -> [Statement]
+parseModule :: SExpr -> [ProjectStatement]
 parseModule = \case
   List (Atom "@module" : Pair _startLabel _endLabel : statements) ->
     parseStatement <$> statements
@@ -139,7 +131,7 @@ parseModule = \case
     error $ "Invalid module format: " <> show unknown
 
 -- TODO: We should be able to autogen these from JSON
-parseStatement :: SExpr -> Statement
+parseStatement :: SExpr -> ProjectStatement
 parseStatement = \case
   Builtin "@label" [Atom name] ->
     Label $ bs8pack name
@@ -171,11 +163,11 @@ parseStatement = \case
           )
       ] ->
       DefineInteraction
-        InteractionDef
-          { idParticipantNames = bs8pack . parseName <$> participantNames,
-            idAssetNames = bs8pack . parseName <$> assetNames,
-            idArgumentNames = bs8pack . parseName <$> argumentNames,
-            idInteractions = parseInteraction <$> interactions
+        ProjectInteractionDef
+          { pidParticipantNames = bs8pack . parseName <$> participantNames,
+            pidAssetNames = bs8pack . parseName <$> assetNames,
+            pidArgumentNames = bs8pack . parseName <$> argumentNames,
+            pidInteractions = parseInteraction <$> interactions
           }
   Builtin "def" [Atom variableName, Builtin "λ" (Atom argName : body)] ->
     DefineFunction (bs8pack variableName) (bs8pack argName) (parseStatement <$> body)
@@ -183,23 +175,23 @@ parseStatement = \case
     Define (bs8pack variableName) (parseExpression sexpr)
   Builtin "ignore!" [sexpr] ->
     Ignore (parseExpression sexpr)
-  Builtin "return" [List [Atom typeName]] ->
-    Return $ var typeName
+  Builtin "return" [sexpr] ->
+    Return (parseTrivialExpression sexpr)
   Builtin "set-participant" [roleName] ->
     SetParticipant (var $ parseName roleName)
   Builtin "expect-deposited" [Builtin "@record" amounts] ->
-    ExpectDeposited (parseAssetMap amounts)
+    Deposit (var "ACTIVE") (parseAssetMap amounts)
   Builtin "expect-withdrawn" [Atom roleName, Builtin "@record" amounts] ->
-    ExpectWithdrawn (var roleName) (parseAssetMap amounts)
+    Withdraw (var roleName) (parseAssetMap amounts)
   Builtin "add-to-publish" _ ->
     Require $ Explicit (Boolean True)
   Builtin "add-to-deposit" [Builtin "@record" amounts] ->
-    AddToDeposit (parseAssetMap amounts)
+    Deposit (var "ACTIVE") (parseAssetMap amounts)
   Builtin "consensus:withdraw" [Atom roleName, Builtin "@record" amounts] ->
-    AddToWithdraw (var roleName) (parseAssetMap amounts)
+    Withdraw (var roleName) (parseAssetMap amounts)
   -- FIXME Compiler to plutus IR should separate consensus from participant statements.
   Builtin "participant:withdraw" [Atom roleName, Builtin "@record" amounts] ->
-    AddToWithdraw (var roleName) (parseAssetMap amounts)
+    Withdraw (var roleName) (parseAssetMap amounts)
   -- NOTE: Does not seem to be used in the latest project.sexp output
   -- FIXME: Make sure this is not used and cleanup
   -- Builtin "add-to-withdraw" [Atom roleName, Atom amountName] ->
@@ -214,24 +206,7 @@ parseStatement = \case
   unknown ->
     error $ "Unknown statement in contract body: " <> show unknown
 
-parseAssetMap :: [SExpr] -> AssetMap
-parseAssetMap = Map.fromList . map parseField
-  where
-    parseField (Builtin name [Atom amountName]) = (bs8pack name, var amountName)
-    parseField field = error $ "Malformed field in asset map: " <> show field
-
-parseExpression :: SExpr -> Expression
-parseExpression = \case
-  Builtin "expect-published" [variableName] ->
-    ExpectPublished (bs8pack $ parseName variableName)
-  Builtin "@app" [Atom "isValidSignature", Atom roleName, Atom digestVariableName, Atom signatureVariableName] ->
-    IsValidSignature (var roleName) (var digestVariableName) (var signatureVariableName)
-  Builtin "sign" [Atom _variableName] ->
-    NoOp
-  unknown ->
-    error $ "Unknown expression in contract body: " <> show unknown
-
-parseInteraction :: SExpr -> (ByteString, [Statement])
+parseInteraction :: SExpr -> (ByteString, [ProjectStatement])
 parseInteraction = \case
   Builtin participantName statements ->
     (bs8pack participantName, parseStatement <$> statements)
@@ -239,48 +214,6 @@ parseInteraction = \case
     (bs8pack "consensus", parseStatement <$> statements)
   unknown ->
     error $ "Invalid participant interaction expression: " <> show unknown
-
-parseContractHeader :: SExpr -> [Statement]
-parseContractHeader = \case
-  List (Atom "@header" : content) ->
-    join $ run <$> content
-  unknown ->
-    error $ "Unknown header format: " <> show unknown
-  where
-    run = \case
-      List (Atom "defdata" : Atom name : constructorSExps) ->
-        let constructors = over _1 bs8pack . parseConstructor <$> constructorSExps
-         in [DefineDatatype (bs8pack name) constructors]
-      List (List arg : args) ->
-        flip fmap (List arg : args) $ \case
-          List [Atom name, _, _] -> Declare $ bs8pack name
-          unknown -> error $ "Invalid argument value: " <> show unknown
-      List participants ->
-        flip fmap participants $ \case
-          Atom name -> Declare $ bs8pack name
-          unknown -> error $ "Invalid participant value: " <> show unknown
-      unknown ->
-        error $ "Unknown expression in contract header: " <> show unknown
-
-    parseConstructor = \case
-      Atom name ->
-        (name, 0)
-      List (Atom name : args) ->
-        (name, toInteger (length args))
-      unknown ->
-        error $ "Invalid constructor expression: " <> show unknown
-
-parseContractBody :: SExpr -> [Statement]
-parseContractBody = \case
-  List (Atom "@body" : content) ->
-    parseStatement <$> content
-  unknown ->
-    error $ "Unknown body format: " <> show unknown
-
-parseInputs :: DatatypeMap -> SExprString -> Either (ParseErrorBundle String Void) (Map ByteString GlowValue)
-parseInputs datatypes variableMapStr = do
-  variableMapSExpr <- parse (parseSExpr def) "body" variableMapStr
-  pure $ parseVariableMap datatypes variableMapSExpr
 
 parseVariableMap :: DatatypeMap -> SExpr -> VariableMap
 parseVariableMap _datatypes = \case
@@ -322,12 +255,12 @@ parseVariableMap _datatypes = \case
 data GlowProgram = GlowProgram
   { _participants :: [ByteString],
     _arguments :: [ByteString],
-    _consensusProgram :: GlowContract,
-    _participantPrograms :: Map ByteString GlowContract
+    _consensusProgram :: GlowProjectContract,
+    _participantPrograms :: Map ByteString GlowProjectContract
   }
   deriving (Show)
 
-extractPrograms :: [Statement] -> GlowProgram
+extractPrograms :: [ProjectStatement] -> GlowProgram
 extractPrograms statements =
   execState (traverse processHeaderStatement statements) initialState
   where
@@ -341,11 +274,11 @@ extractPrograms statements =
 
     processHeaderStatement = \case
       DefineInteraction
-        InteractionDef
-          { idParticipantNames = participants,
-            idArgumentNames = arguments,
-            idAssetNames = _, -- TODO: do something with assets.
-            idInteractions = interactions
+        ProjectInteractionDef
+          { pidParticipantNames = participants,
+            pidArgumentNames = arguments,
+            pidAssetNames = _, -- TODO: do something with assets.
+            pidInteractions = interactions
           } -> do
           modify $ \program -> program {_participants = participants, _arguments = arguments}
           let consensusProgram = processProgram "consensus" interactions
@@ -372,7 +305,7 @@ extractPrograms statements =
       stmt ->
         addStatement stmt
 
-    setParticipant :: GlowValueRef -> State (Maybe GlowValueRef, ExecutionPoint, Map ExecutionPoint ([Statement], Maybe ExecutionPoint)) ()
+    setParticipant :: GlowValueRef -> State (Maybe GlowValueRef, ExecutionPoint, Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)) ()
     setParticipant newParticipant =
       modify $ \cur@(curParticipant, curLabel, contract) ->
         if curParticipant == Just newParticipant
@@ -393,7 +326,7 @@ extractPrograms statements =
             Nothing ->
               (Just newParticipant, curLabel, contract & Map.insert curLabel ([SetParticipant newParticipant], Nothing))
 
-    addStatement :: Statement -> State (Maybe GlowValueRef, ExecutionPoint, Map ExecutionPoint ([Statement], Maybe ExecutionPoint)) ()
+    addStatement :: ProjectStatement -> State (Maybe GlowValueRef, ExecutionPoint, Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)) ()
     addStatement stmt =
       modify $ \(curParticipant, curLabel, contract) ->
         let newContract = case Map.lookup curLabel contract of
@@ -403,46 +336,3 @@ extractPrograms statements =
                 contract
          in (curParticipant, curLabel, newContract)
 
-parseTypeTable :: SExpr -> Map ByteString Type
-parseTypeTable = parseTable parseType
-
-parseTable :: (SExpr -> a) -> SExpr -> Map ByteString a
-parseTable p (List (Atom "hash" : kvs)) = Map.fromList $ map (parseKV p) kvs
-parseTable _ sexp = error $ "parseTable: S-expression is not a hash map: " <> show sexp
-
-parseKV :: (SExpr -> a) -> SExpr -> (ByteString, a)
-parseKV p (List [Atom k, v]) = (bs8pack k, p v)
-parseKV p sexp =
-  ( bs8pack $ "parseKV: S-expression is not a key-value pair: " <> show sexp,
-    (p (List []))
-  )
-
-parseType :: SExpr -> Type
-parseType (List [Atom "type:arrow", List (Atom "@list" : params), result]) =
-  TyArrow (map parseType params) (parseType result)
-parseType (List [Atom "type:name", List [Atom "quote", Atom name]]) =
-  TyName (bs8pack name)
-parseType (List [Atom "type:name-subtype", List [Atom "quote", Atom name], typ]) =
-  TyNameSubtype (bs8pack name) (parseType typ)
-parseType (List [Atom "type:tuple", List (Atom "@list" : elts)]) =
-  TyTuple (map parseType elts)
-parseType sexp =
-  TyUnknown (bs8pack $ show sexp)
-
-var :: String -> GlowValueRef
-var = Variable . bs8pack
-
-bs8pack :: String -> ByteString
-bs8pack = WrappedByteString . LBS8.pack
-
-bs8unpack :: ByteString -> String
-bs8unpack = LBS8.unpack . toLBS
-
-parseName :: SExpr -> String
-parseName = \case
-  Atom name ->
-    name
-  List [Atom "quote", Atom name] ->
-    name
-  unknown ->
-    error $ "Invalid name expression: " <> show unknown
