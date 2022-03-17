@@ -1,0 +1,3 @@
+[submodule "llvm-hs"]
+	path = llvm-hs
+	url = git@github.com:muknio/llvm-hs

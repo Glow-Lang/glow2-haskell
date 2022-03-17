@@ -59,6 +59,7 @@ common shared-opts
     , sexpr-parser ^>=0.2.2
     , typed-process ^>=0.2.8
     , microlens ^>=0.4.12
+    , llvm-hs-pure ^>=12.0
   default-language:    Haskell2010
 
 library

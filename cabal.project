@@ -1,4 +1,6 @@
-packages: */*.cabal
+packages:
+  */*.cabal
+  llvm-hs/llvm-hs-pure/*.cabal
 
 package glow
   tests: True
