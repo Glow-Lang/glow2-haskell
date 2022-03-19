@@ -79,7 +79,12 @@ parseStatement = \case
     Require $ var variableName
   Builtin "assert!" [Atom variableName] ->
     Require $ var variableName
-  Builtin "switch" (Atom _argumentExpression : _patterns) ->
-    error "switch statements are not supported"
+  Builtin "switch" (argumentExpression : cases) ->
+    Switch (parseTrivialExpression argumentExpression) (parseSwitchCase <$> cases)
   unknown ->
     error $ "Unknown statement in contract body: " <> show unknown
+
+parseSwitchCase :: SExpr -> (Pattern, [AnfStatement])
+parseSwitchCase = \case
+  List (pat : body) -> (parsePattern pat, parseStatement <$> body)
+  unknown           -> error $ "expected a pattern and body in a switch case: " <> show unknown

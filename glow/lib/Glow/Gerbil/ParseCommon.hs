@@ -63,6 +63,8 @@ parseExpression = \case
     Sign (parseTrivialExpression arg)
   Builtin "digest" args ->
     Digest (parseTrivialExpression <$> args)
+  Builtin "input" [typ, tag] ->
+    Input (parseType typ) (parseTrivialExpression tag)
   u@(Builtin "@tuple" []) -> TrvExpr (parseTrivialExpression u)
   v@(Number _) -> TrvExpr (parseTrivialExpression v)
   s@(String _) -> TrvExpr (parseTrivialExpression s)
@@ -96,3 +98,9 @@ parseTrivialExpression = \case
   String s             -> Explicit (ByteString (bs8pack s))
   unknown              ->
     error $ "Unknown expression in trivial-expression position: " <> show unknown
+
+parsePattern :: SExpr -> Pattern
+parsePattern = \case
+  Bool b   -> ValPat (Boolean b)
+  Number n -> ValPat (Integer n)
+  unknown  -> error $ "Unknown switch pattern: " <> show unknown

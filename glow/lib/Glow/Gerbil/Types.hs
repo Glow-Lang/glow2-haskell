@@ -79,7 +79,7 @@ data Type
   -- - [ ] type:tuple
   -- - [ ] type:record
   -- - [x] type:arrow
-  deriving (Show)
+  deriving (Eq, Show)
 
 -- TODO: support lambdas with CPS
 data Statement interactionDef
@@ -97,6 +97,7 @@ data Statement interactionDef
   | Ignore Expression
   | Require GlowValueRef
   | Return Expression
+  | Switch GlowValueRef [(Pattern, [(Statement interactionDef)])]
   deriving stock (Generic, Eq, Show)
 
 -- deriving (FromJSON, ToJSON)
@@ -129,6 +130,7 @@ data Expression
   = ExpectPublished ByteString
   | Digest [GlowValueRef]
   | Sign GlowValueRef
+  | Input Type GlowValueRef
   | EqlExpr GlowValueRef GlowValueRef
   | AppExpr GlowValueRef [GlowValueRef]
   | TrvExpr GlowValueRef
@@ -155,6 +157,11 @@ data GlowValue
   deriving stock (Generic, Eq, Show)
 
 -- deriving anyclass (FromJSON, ToJSON) -- ToSchema, ToArgument)
+
+data Pattern
+  = VarPat ByteString
+  | ValPat GlowValue
+  deriving stock (Generic, Eq, Show)
 
 newtype LedgerPubKey = LedgerPubKey ByteString
   deriving stock (Generic, Eq, Show)
