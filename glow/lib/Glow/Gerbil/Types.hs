@@ -32,17 +32,17 @@ instance Show ByteString where
   show = show . toLBS
 
 -- TODO: variable cleanup, only keep live variables between each transaction
-type GlowContract = M.Map ExecutionPoint ([Statement], Maybe ExecutionPoint)
+type GlowProjectContract = M.Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)
 
 type VariableMap = M.Map ByteString GlowValue
 
-type FunctionMap = M.Map ByteString (ByteString, [Statement])
+type ProjectFunctionMap = M.Map ByteString (ByteString, [ProjectStatement])
 
 type DatatypeMap = M.Map ByteString [(ByteString, Integer)]
 
 type AssetMap = M.Map ByteString GlowValueRef
 
-type Function = (ByteString, [Statement])
+type ProjectFunction = (ByteString, [ProjectStatement])
 
 type ExecutionPoint = ByteString
 
@@ -79,44 +79,61 @@ data Type
   -- - [ ] type:tuple
   -- - [ ] type:record
   -- - [x] type:arrow
-  deriving (Show)
+  deriving (Eq, Show)
 
 -- TODO: support lambdas with CPS
-data Statement
+data Statement interactionDef
   = Label ByteString
   | DebugLabel ByteString
-  | Declare ByteString
-  | DefineInteraction InteractionDef
+  | DefineInteraction interactionDef
   | Define ByteString Expression
-  | DefineFunction ByteString ByteString [Statement]
+  | DefineFunction ByteString [ByteString] [(Statement interactionDef)]
   | DefineDatatype ByteString [(ByteString, Integer)]
+  | AtParticipant GlowValueRef (Statement interactionDef)
   | SetParticipant GlowValueRef
-  | ExpectDeposited AssetMap
-  | ExpectWithdrawn GlowValueRef AssetMap
-  | AddToDeposit AssetMap
-  | AddToWithdraw GlowValueRef AssetMap
+  | Publish GlowValueRef [GlowValueRef]
+  | Deposit GlowValueRef AssetMap
+  | Withdraw GlowValueRef AssetMap
   | Ignore Expression
   | Require GlowValueRef
-  | Return GlowValueRef
+  | Return Expression
+  | Switch GlowValueRef [(Pattern, [(Statement interactionDef)])]
   deriving stock (Generic, Eq, Show)
 
 -- deriving (FromJSON, ToJSON)
 
-data InteractionDef = InteractionDef
-  { idParticipantNames :: [ByteString],
-    idAssetNames :: [ByteString],
-    idArgumentNames :: [ByteString],
-    idInteractions :: [(ByteString, [Statement])]
+data AnfInteractionDef = AnfInteractionDef
+  { aidParticipantNames :: [ByteString],
+    aidAssetNames :: [ByteString],
+    aidArgumentNames :: [ByteString],
+    aidBody :: [AnfStatement]
   }
   deriving stock (Generic, Eq, Show)
 
 -- deriving (FromJSON, ToJSON)
 
+type AnfStatement = Statement AnfInteractionDef
+
+data ProjectInteractionDef = ProjectInteractionDef
+  { pidParticipantNames :: [ByteString],
+    pidAssetNames :: [ByteString],
+    pidArgumentNames :: [ByteString],
+    pidInteractions :: [(ByteString, [ProjectStatement])]
+  }
+  deriving stock (Generic, Eq, Show)
+
+-- deriving (FromJSON, ToJSON)
+
+type ProjectStatement = Statement ProjectInteractionDef
+
 data Expression
   = ExpectPublished ByteString
-  | IsValidSignature GlowValueRef GlowValueRef GlowValueRef
-  | Apply ByteString GlowValueRef
-  | NoOp
+  | Digest [GlowValueRef]
+  | Sign GlowValueRef
+  | Input Type GlowValueRef
+  | EqlExpr GlowValueRef GlowValueRef
+  | AppExpr GlowValueRef [GlowValueRef]
+  | TrvExpr GlowValueRef
   deriving stock (Generic, Eq, Show)
 
 -- deriving anyclass (FromJSON, ToJSON)
@@ -141,6 +158,11 @@ data GlowValue
 
 -- deriving anyclass (FromJSON, ToJSON) -- ToSchema, ToArgument)
 
+data Pattern
+  = VarPat ByteString
+  | ValPat GlowValue
+  deriving stock (Generic, Eq, Show)
+
 newtype LedgerPubKey = LedgerPubKey ByteString
   deriving stock (Generic, Eq, Show)
   deriving newtype (IsString)
@@ -155,7 +177,7 @@ newtype LedgerSignature = LedgerSignature ByteString
 
 {-
 data GlowDatum = GlowDatum
-  { gdContract :: GlowContract,
+  { gdContract :: GlowProjectContract,
     gdVariableMap :: VariableMap,
     -- separate from variable map to prevent mutual recursion
     gdFunctionMap :: FunctionMap,
