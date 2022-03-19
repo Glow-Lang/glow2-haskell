@@ -1,8 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternSynonyms #-}
 
-module Glow.Gerbil.ParseCommon -- (pattern Builtin, pattern Pair)
-where
+module Glow.Gerbil.ParseCommon where
 
 import qualified Data.ByteString.Lazy.Char8 as LBS8
 import Data.Map.Strict (Map)
