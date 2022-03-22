@@ -36,8 +36,8 @@ translateType ty = case ty of
     tuple
       [ mkFunctionType
           opaquePtr
-          (Ast.ftParams fTy)
-          (Ast.ftRetType fTy),
+          (map translateType $ Ast.ftParams fTy)
+          (translateType $ Ast.ftRetType fTy),
         opaquePtr
       ]
   Ast.TFPtr fPtrTy ->
@@ -48,16 +48,21 @@ translateType ty = case ty of
     -- will have to revist.
     let fTy = Ast.fptFuncType fPtrTy
      in mkFunctionType
-          (translateType (Ast.TTuple (Ast.fptCaptures fPtrTy)))
-          (Ast.ftParams fTy)
-          (Ast.ftRetType fTy)
+          (translateType $ Ast.TTuple $ Ast.fptCaptures fPtrTy)
+          (map translateType $ Ast.ftParams fTy)
+          (translateType $ Ast.ftRetType fTy)
 
-mkFunctionType :: Type -> [Ast.Type] -> Ast.Type -> Type
+-- | Construct an LLVM type for a function pointer, given its (already
+-- translated) capture list, parameter list, and return type. That is,
+-- @'mkFunctionType' captures args ret@ constructs an LLVM type corresponding
+-- to a function pointer with @captures@ as its closure, @args@ as its
+-- argument list, and @ret@ as its return type.
+mkFunctionType :: Type -> [Type] -> Type -> Type
 mkFunctionType captures args ret =
   FunctionType
     { isVarArg = False,
-      argumentTypes = captures : map translateType args,
-      resultType = translateType ret
+      argumentTypes = captures : args,
+      resultType = ret
     }
 
 tuple :: [Type] -> Type
