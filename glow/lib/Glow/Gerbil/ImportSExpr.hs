@@ -38,9 +38,13 @@ parseOutputs = many parseOutput
 
 parseOutput :: Parser Output
 parseOutput =
-  Output
-    <$> (takeWhileP Nothing (/= '\n') <* char '\n')
-    <*> SExpr.parseSExpr SExpr.def
+  many (string "resolve-type/scheme:" *> parseLine *> parseLine) *>
+  (Output
+     <$> parseLine
+     <*> SExpr.parseSExpr SExpr.def)
+
+parseLine :: Parser String
+parseLine = takeWhileP Nothing (/= '\n') <* char '\n'
 
 -- | Parameters for invoking the glow frontend.
 data FrontEndParams = FrontEndParams

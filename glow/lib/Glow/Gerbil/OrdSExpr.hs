@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
+-- | An Ordering for SExprs
 module Glow.Gerbil.OrdSExpr where
 
 import Glow.Prelude
@@ -9,10 +10,15 @@ newtype OrdSExpr = OrdSExpr SExpr
   deriving (Eq, Show)
 
 instance Ord OrdSExpr where
-  compare (OrdSExpr x) (OrdSExpr y) = case (normalizeConsList x, normalizeConsList y) of
-    (ConsList [] a, ConsList [] b) -> compare (OrdSExpr a) (OrdSExpr b)
+  compare (OrdSExpr x) (OrdSExpr y) = case (x, y) of
+    -- Normalizing Cases
     (ConsList [] a, b) -> compare (OrdSExpr a) (OrdSExpr b)
     (a, ConsList [] b) -> compare (OrdSExpr a) (OrdSExpr b)
+    (ConsList (a1 : a2 : a3) a4, b) -> compare (OrdSExpr (ConsList [a1] (ConsList (a2 : a3) a4))) (OrdSExpr b)
+    (a, ConsList (b1 : b2 : b3) b4) -> compare (OrdSExpr a) (OrdSExpr (ConsList [b1] (ConsList (b2 : b3) b4)))
+    (List (a1 : a2), b) -> compare (OrdSExpr (ConsList [a1] (List a2))) (OrdSExpr b)
+    (a, List (b1 : b2)) -> compare (OrdSExpr a) (OrdSExpr (ConsList [b1] (List b2)))
+    -- Ordering Cases
     (Atom a, Atom b) -> compare a b
     (Atom _, _) -> LT
     (_, Atom _) -> GT
@@ -28,16 +34,4 @@ instance Ord OrdSExpr where
     (List [], List []) -> EQ
     (List [], _) -> LT
     (_, List []) -> GT
-    (List (a1 : a2), List (b1 : b2)) -> compare (OrdSExpr (ConsList [a1] (List a2))) (OrdSExpr (ConsList [b1] (List b2)))
-    (List (a1 : a2), b) -> compare (OrdSExpr (ConsList [a1] (List a2))) (OrdSExpr b)
-    (a, List (b1 : b2)) -> compare (OrdSExpr a) (OrdSExpr (ConsList [b1] (List b2)))
-    (ConsList (a1 : a2) a3, ConsList (b1 : b2) b3) -> compare (OrdSExpr a1) (OrdSExpr b1) <> compare (OrdSExpr (ConsList a2 a3)) (OrdSExpr (ConsList b2 b3))
-
-normalizeConsList :: SExpr -> SExpr
-normalizeConsList = \case
-  ConsList [] a -> normalizeConsList a
-  ConsList [a] b -> ConsList [a] (normalizeConsList b)
-  ConsList (a : b) c -> ConsList [a] (normalizeConsList (ConsList b c))
-  List (a : b) -> ConsList [a] (normalizeConsList (List b))
-  a -> a
-
+    (ConsList [a1] a2, ConsList [b1] b2) -> compare (OrdSExpr a1) (OrdSExpr b1) <> compare (OrdSExpr a2) (OrdSExpr b2)

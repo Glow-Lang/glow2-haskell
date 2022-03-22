@@ -28,10 +28,7 @@ parseTable _ sexp = error $ "parseTable: S-expression is not a hash map: " <> sh
 
 parseKV :: (SExpr -> a) -> SExpr -> (OrdSExpr, a)
 parseKV p (List [k, v]) = (OrdSExpr k, p v)
-parseKV p sexp =
-  ( (OrdSExpr (String $ "parseKV: S-expression is not a key-value pair: " <> show sexp)),
-    (p (List []))
-  )
+parseKV _ sexp = error $ "parseKV: S-expression is not a key-value pair: " <> show sexp
 
 parseType :: SExpr -> Type
 parseType (List [Atom "type:arrow", List (Atom "@list" : params), result]) =
