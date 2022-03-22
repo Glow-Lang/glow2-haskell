@@ -27,6 +27,7 @@ declareExtern v ty = case translateType ty of
 varToName :: Ast.Var -> Name
 varToName (Ast.Var txt) = mkName $ LT.unpack txt
 
+-- | Translate a LastLeg type to an LLVM type.
 translateType :: Ast.Type -> Type
 translateType ty = case ty of
   Ast.TTuple tys ->
@@ -34,7 +35,7 @@ translateType ty = case ty of
   Ast.TFunc fTy ->
     -- A function is a pair of (function pointer, closure pointer)
     tuple
-      [ mkFunctionType
+      [ funcWithClosureType
           opaquePtr
           (map translateType $ Ast.ftParams fTy)
           (translateType $ Ast.ftRetType fTy),
@@ -47,24 +48,16 @@ translateType ty = case ty of
     -- an exisistential, but not sure if we'll hit type errors from LLVM?
     -- will have to revist.
     let fTy = Ast.fptFuncType fPtrTy
-     in mkFunctionType
+     in funcWithClosureType
           (translateType $ Ast.TTuple $ Ast.fptCaptures fPtrTy)
           (map translateType $ Ast.ftParams fTy)
           (translateType $ Ast.ftRetType fTy)
 
--- | Construct an LLVM type for a function pointer, given its (already
--- translated) capture list, parameter list, and return type. That is,
--- @'mkFunctionType' captures args ret@ constructs an LLVM type corresponding
--- to a function pointer with @captures@ as its closure, @args@ as its
--- argument list, and @ret@ as its return type.
-mkFunctionType :: Type -> [Type] -> Type -> Type
-mkFunctionType captures args ret =
-  FunctionType
-    { isVarArg = False,
-      argumentTypes = captures : args,
-      resultType = ret
-    }
+--------------------------------------------------------------------------
+---------------- Combinators for constructing LLVM types ------------------
+--------------------------------------------------------------------------
 
+-- | Construct a tuple type.
 tuple :: [Type] -> Type
 tuple elts =
   StructureType
@@ -72,6 +65,7 @@ tuple elts =
       elementTypes = elts
     }
 
+-- | Construct a pointer type.
 ptr :: Type -> Type
 ptr ty =
   PointerType
@@ -79,5 +73,21 @@ ptr ty =
       pointerAddrSpace = AddrSpace 0
     }
 
+-- Construct an LLVM function type.
+funcType :: [Type] -> Type -> Type
+funcType args ret =
+  FunctionType
+    { isVarArg = False,
+      argumentTypes = args,
+      resultType = ret
+    }
+
+-- | Type for a function with a closure; like 'funcType', but
+-- the first parameter is the type of the capture list.
+funcWithClosureType :: Type -> [Type] -> Type -> Type
+funcWithClosureType captures args ret =
+  funcType (captures : args) ret
+
+-- | An opaque pointer (i.e. pointer to unknown type).
 opaquePtr :: Type
 opaquePtr = ptr (IntegerType 8)
