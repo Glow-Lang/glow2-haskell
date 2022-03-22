@@ -6,6 +6,7 @@ module Glow.Gerbil.ParseCommon where
 import qualified Data.ByteString.Lazy.Char8 as LBS8
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Glow.Gerbil.OrdSExpr as OrdSExpr
 import Glow.Gerbil.Types as Glow
 import Glow.Prelude
 import Text.SExpression as SExpr
@@ -18,17 +19,17 @@ pattern Pair fst snd = List [Atom fst, Atom snd]
 
 ------------------------------------------------------------
 
-parseTypeTable :: SExpr -> Map ByteString Type
+parseTypeTable :: SExpr -> Map OrdSExpr Type
 parseTypeTable = parseTable parseType
 
-parseTable :: (SExpr -> a) -> SExpr -> Map ByteString a
+parseTable :: (SExpr -> a) -> SExpr -> Map OrdSExpr a
 parseTable p (List (Atom "hash" : kvs)) = Map.fromList $ map (parseKV p) kvs
 parseTable _ sexp = error $ "parseTable: S-expression is not a hash map: " <> show sexp
 
-parseKV :: (SExpr -> a) -> SExpr -> (ByteString, a)
-parseKV p (List [Atom k, v]) = (bs8pack k, p v)
+parseKV :: (SExpr -> a) -> SExpr -> (OrdSExpr, a)
+parseKV p (List [k, v]) = (OrdSExpr k, p v)
 parseKV p sexp =
-  ( bs8pack $ "parseKV: S-expression is not a key-value pair: " <> show sexp,
+  ( (OrdSExpr (String $ "parseKV: S-expression is not a key-value pair: " <> show sexp)),
     (p (List []))
   )
 

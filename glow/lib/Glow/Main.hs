@@ -26,7 +26,7 @@ main = do
           pPrint v
           pPrint (extractPrograms (ISExp.fedProject v))
           pPrint (ISExp.fedAnf v)
-          pPrint (parseTypeTable (ISExp.oSExpr (ISExp.fedTypeTable v)))
+          pPrint (parseTypeTable (ISExp.fedTypeTable v))
     _ -> do
       putStrLn "Usage: glow <path/to/glow/frontend> <source-file.glow>"
       exitFailure

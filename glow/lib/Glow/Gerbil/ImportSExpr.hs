@@ -60,7 +60,7 @@ data FrontEndData = FrontEndData
     -- | Type table, extracted from the output of @glow pass method-resolve@.
     -- TODO: parse this into a more strongly typed form, rather than just
     -- keeping it as an s-expression.
-    fedTypeTable :: Output
+    fedTypeTable :: SExpr.SExpr
   }
   deriving (Show, Eq)
 
@@ -90,17 +90,15 @@ frontEndData params = do
           Right v -> Right v
   project <- pass "project"
   anf <- pass "anf"
-  methodResolve <- pass "method-resolve"
   pure $ do
-    projectStmtss <- map (ParseProject.parseModule . oSExpr) <$> project
-    anfStmtss <- map (ParseAnf.parseModule . oSExpr) <$> anf
-    resolve <- methodResolve
-    case (projectStmtss, anfStmtss, resolve) of
-      ([projectStmts], [anfStmts], (_ : types : _)) ->
+    projectoSEs <- map oSExpr <$> project
+    anfoSEs <- map oSExpr <$> anf
+    case (projectoSEs, anfoSEs) of
+      ([projectStmts, types], [anfStmts]) ->
         Right
           FrontEndData
-            { fedProject = projectStmts,
-              fedAnf = anfStmts,
+            { fedProject = ParseProject.parseModule projectStmts,
+              fedAnf = ParseAnf.parseModule anfStmts,
               fedTypeTable = types
             }
-      _ -> error ("wrong number of outputs: " <> show (length projectStmtss, length anfStmtss, length resolve))
+      _ -> error ("wrong number of outputs: " <> show (length projectoSEs, length anfoSEs))
