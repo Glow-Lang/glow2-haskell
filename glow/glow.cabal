@@ -80,6 +80,7 @@ library
     , Glow.StateChannel
 
     , Glow.Targets.EVM
+    , Glow.Targets.EVM.Assembler.Parser
 
     , Glow.Gerbil.Types
     , Glow.Gerbil.ParseAnf
