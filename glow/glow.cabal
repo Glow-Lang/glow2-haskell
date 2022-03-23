@@ -79,7 +79,7 @@ library
     , Glow.Consensus.StateChannel
     , Glow.StateChannel
 
-    , Glow.EVM
+    , Glow.Targets.EVM
 
     , Glow.Gerbil.Types
     , Glow.Gerbil.ParseAnf

@@ -1,4 +1,4 @@
-module Glow.EVM where
+module Glow.Targets.EVM where
 
 import qualified EVM.Opcode as EO
 import Glow.Prelude
