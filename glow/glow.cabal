@@ -68,10 +68,12 @@ library
 
     , Glow.Ast.Surface
     , Glow.Ast.LastLeg
+    , Glow.Ast.Targets.Lurk
     , Glow.Parser
     , Glow.Prelude
     , Glow.Runtime.Interaction
     , Glow.Runtime.Interaction.STM
+    , Glow.Translate.LurkToSExpr
     , Glow.Consensus.Local
     , Glow.Consensus.StateChannel
     , Glow.StateChannel
