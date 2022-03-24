@@ -102,3 +102,4 @@ test-suite tests
   other-modules:
       Tests.Parser
     , Tests.Runtime.Interaction
+    , Tests.Lurk

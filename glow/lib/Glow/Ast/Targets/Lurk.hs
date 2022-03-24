@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 -- | Ast for Lurk; see https://github.com/lurk-lang/lurk/blob/master/spec/v0-1.md
 --
 -- For types with a type parameter, the parameter is used to attach misc
@@ -67,4 +69,4 @@ data Binding a = Binding
 
 -- | A variable
 newtype Symbol = Symbol {symText :: Text}
-  deriving (Show, Read, Eq, Ord)
+  deriving (Show, Read, Eq, Ord, IsString)
