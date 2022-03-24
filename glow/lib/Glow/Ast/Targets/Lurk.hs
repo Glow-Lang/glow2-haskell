@@ -8,6 +8,7 @@ module Glow.Ast.Targets.Lurk where
 
 import Data.Text.Lazy (Text)
 import Glow.Prelude
+import Text.SExpression (SExpr)
 
 -- | A Lurk expression. The @a@ type parameter can be used to attach
 -- misc. metadata (e.g. debuginfo).
@@ -22,12 +23,11 @@ data Expr a
   | ExUnary a UnaryOp (Expr a)
   | ExBegin a [Expr a] (Expr a)
   | ExCurrentEnv a
-  | -- | @eval@ with one argument (implicitly empty environment)
-    ExEval a (Expr a)
-  | -- | @eval@ with two arguments
-    ExEvalEnv a (Expr a) (Expr a)
+  | -- | @eval@ with an optional environment
+    ExEval a (Expr a) (Maybe (Expr a))
   | ExSymbol a Symbol
   | ExApply a (Expr a) [Expr a]
+  | ExQuote a SExpr
   deriving (Show, Read, Eq)
 
 -- | A binary operatory
@@ -48,7 +48,6 @@ data UnaryOp
   = UOpCar
   | UOpCdr
   | UOpEmit
-  | UOpQuote
   deriving (Show, Read, Eq)
 
 -- | A let binding. Wether this is a @let@ or a @letrec@ depends on

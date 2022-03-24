@@ -28,14 +28,16 @@ translateExpr = \case
     S.List (S.Atom "begin" : map translateExpr (exs <> [ex]))
   ExCurrentEnv _ ->
     S.List [S.Atom "current-env"]
-  ExEval _ exp ->
+  ExEval _ exp Nothing ->
     S.List [S.Atom "eval", translateExpr exp]
-  ExEvalEnv _ exp env ->
+  ExEval _ exp (Just env) ->
     S.List [S.Atom "eval", translateExpr exp, translateExpr env]
   ExSymbol _ sym ->
     translateSymbol sym
   ExApply _ f args ->
     S.List $ map translateExpr (f : args)
+  ExQuote _ sexpr ->
+    S.List [S.Atom "quote", sexpr]
 
 translateSymbol :: Symbol -> S.SExpr
 translateSymbol (Symbol txt) =
@@ -56,7 +58,6 @@ translateUnaryOp = \case
   UOpCar -> "car"
   UOpCdr -> "cdr"
   UOpEmit -> "emit"
-  UOpQuote -> "quote"
 
 translateLet :: Let a -> [S.SExpr]
 translateLet l =
