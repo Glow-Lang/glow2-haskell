@@ -22,15 +22,13 @@ parseTypeTable :: SExpr -> Map ByteString Type
 parseTypeTable = parseTable parseType
 
 parseTable :: (SExpr -> a) -> SExpr -> Map ByteString a
-parseTable p (List (Atom "hash" : kvs)) = Map.fromList $ map (parseKV p) kvs
+parseTable p (List (Atom "hash" : kvs)) = Map.fromList $ mapMaybe (parseKV p) kvs
 parseTable _ sexp = error $ "parseTable: S-expression is not a hash map: " <> show sexp
 
-parseKV :: (SExpr -> a) -> SExpr -> (ByteString, a)
-parseKV p (List [Atom k, v]) = (bs8pack k, p v)
-parseKV p sexp =
-  ( bs8pack $ "parseKV: S-expression is not a key-value pair: " <> show sexp,
-    (p (List []))
-  )
+parseKV :: (SExpr -> a) -> SExpr -> Maybe (ByteString, a)
+parseKV p (List [Atom k, v]) = Just (bs8pack k, p v)
+parseKV _ (List [_, _]) = Nothing
+parseKV _ sexp = error $ "parseKV: S-expression is not a key-value pair: " <> show sexp
 
 parseType :: SExpr -> Type
 parseType (List [Atom "type:arrow", List (Atom "@list" : params), result]) =

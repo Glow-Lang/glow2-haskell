@@ -11,12 +11,14 @@ module Glow.Gerbil.ImportSExpr
 where
 
 import qualified Data.ByteString.Lazy as LBS
+import Data.Map.Strict (Map)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Data.Void (Void)
 import Glow.Gerbil.ParseAnf as ParseAnf
+import Glow.Gerbil.ParseCommon (parseTypeTable)
 import Glow.Gerbil.ParseProject as ParseProject
-import qualified Glow.Gerbil.Types as GT
+import Glow.Gerbil.Types as GT
 import Glow.Prelude hiding (many)
 import qualified System.Process.Typed as P
 import Text.Megaparsec
@@ -39,8 +41,11 @@ parseOutputs = many parseOutput
 parseOutput :: Parser Output
 parseOutput =
   Output
-    <$> (takeWhileP Nothing (/= '\n') <* char '\n')
+    <$> parseLine
     <*> SExpr.parseSExpr SExpr.def
+
+parseLine :: Parser String
+parseLine = takeWhileP Nothing (/= '\n') <* char '\n'
 
 -- | Parameters for invoking the glow frontend.
 data FrontEndParams = FrontEndParams
@@ -57,10 +62,8 @@ data FrontEndData = FrontEndData
     fedProject :: [GT.ProjectStatement],
     -- | Output of @glow pass anf@
     fedAnf :: [GT.AnfStatement],
-    -- | Type table, extracted from the output of @glow pass method-resolve@.
-    -- TODO: parse this into a more strongly typed form, rather than just
-    -- keeping it as an s-expression.
-    fedTypeTable :: Output
+    -- | Type table, extracted from the finaltypetable output of @glow pass project@.
+    fedTypeTable :: Map ByteString Type
   }
   deriving (Show, Eq)
 
@@ -90,17 +93,15 @@ frontEndData params = do
           Right v -> Right v
   project <- pass "project"
   anf <- pass "anf"
-  methodResolve <- pass "method-resolve"
   pure $ do
-    projectStmtss <- map (ParseProject.parseModule . oSExpr) <$> project
-    anfStmtss <- map (ParseAnf.parseModule . oSExpr) <$> anf
-    resolve <- methodResolve
-    case (projectStmtss, anfStmtss, resolve) of
-      ([projectStmts], [anfStmts], (_ : types : _)) ->
+    projectoSEs <- map oSExpr <$> project
+    anfoSEs <- map oSExpr <$> anf
+    case (projectoSEs, anfoSEs) of
+      ([projectStmts, types], [anfStmts]) ->
         Right
           FrontEndData
-            { fedProject = projectStmts,
-              fedAnf = anfStmts,
-              fedTypeTable = types
+            { fedProject = ParseProject.parseModule projectStmts,
+              fedAnf = ParseAnf.parseModule anfStmts,
+              fedTypeTable = parseTypeTable types
             }
-      _ -> error ("wrong number of outputs: " <> show (length projectStmtss, length anfStmtss, length resolve))
+      _ -> error ("wrong number of outputs: " <> show (length projectoSEs, length anfoSEs))
