@@ -1,7 +1,6 @@
 module Glow.Main (main) where
 
 import qualified Glow.Gerbil.ImportSExpr as ISExp
-import Glow.Gerbil.ParseCommon (parseTypeTable)
 import Glow.Gerbil.ParseProject (extractPrograms)
 import Glow.Prelude
 import Text.Show.Pretty (pPrint)
@@ -26,7 +25,7 @@ main = do
           pPrint v
           pPrint (extractPrograms (ISExp.fedProject v))
           pPrint (ISExp.fedAnf v)
-          pPrint (parseTypeTable (ISExp.oSExpr (ISExp.fedTypeTable v)))
+          pPrint (ISExp.fedTypeTable v)
     _ -> do
       putStrLn "Usage: glow <path/to/glow/frontend> <source-file.glow>"
       exitFailure
