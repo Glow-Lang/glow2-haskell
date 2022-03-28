@@ -69,11 +69,13 @@ library
 
     , Glow.Ast.Surface
     , Glow.Ast.LastLeg
+    , Glow.Ast.Targets.Lurk
     , Glow.Parser
     , Glow.Prelude
     , Glow.Runtime.Interaction
     , Glow.Runtime.Interaction.STM
     , Glow.Translate.LastLegToLLVM
+    , Glow.Translate.LurkToSExpr
     , Glow.Consensus.Local
     , Glow.Consensus.StateChannel
     , Glow.StateChannel
@@ -103,3 +105,4 @@ test-suite tests
       Tests.Parser
     , Tests.Runtime.Interaction
     , Tests.LastLegToLLVM
+    , Tests.Lurk
