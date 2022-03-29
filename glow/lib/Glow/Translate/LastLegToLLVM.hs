@@ -38,7 +38,7 @@ translateType ty = case ty of
       [ funcWithClosureType
           opaquePtr
           (map translateType $ Ast.ftParams fTy)
-          (translateType $ Ast.ftRetType fTy),
+          (translateReturnType fTy),
         opaquePtr
       ]
   Ast.TFPtr fPtrTy ->
@@ -51,7 +51,18 @@ translateType ty = case ty of
      in funcWithClosureType
           (translateType $ Ast.TTuple $ Ast.fptCaptures fPtrTy)
           (map translateType $ Ast.ftParams fTy)
-          (translateType $ Ast.ftRetType fTy)
+          (translateReturnType fTy)
+
+-- | Translate the return type of a function.
+translateReturnType :: Ast.FuncType -> Type
+translateReturnType fTy =
+  -- If the function has side effects, that means it
+  -- doesn't return a value at the LLVM level - instead we unwind
+  -- the stack, commit the transaction, and our continuation gets
+  -- the value in the next transaction.
+  if Ast.ftEffectful fTy
+    then VoidType
+    else (translateType $ Ast.ftRetType fTy)
 
 --------------------------------------------------------------------------
 ---------------- Combinators for constructing LLVM types ------------------
