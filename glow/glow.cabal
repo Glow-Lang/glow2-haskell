@@ -73,6 +73,7 @@ library
     , Glow.Prelude
     , Glow.Runtime.Interaction
     , Glow.Runtime.Interaction.STM
+    , Glow.Translate.GerbilTypeToLastLeg
     , Glow.Translate.LurkToSExpr
     , Glow.Consensus.Local
     , Glow.Consensus.StateChannel
@@ -103,3 +104,4 @@ test-suite tests
       Tests.Parser
     , Tests.Runtime.Interaction
     , Tests.Lurk
+    , Tests.TranslateType
