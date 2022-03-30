@@ -98,6 +98,6 @@ parseTrivialExpression = \case
 
 parsePattern :: SExpr -> Pattern
 parsePattern = \case
-  Bool b   -> ValPat (Boolean b)
-  Number n -> ValPat (Integer n)
+  Bool b   -> Pattern (PwTrivial (ValPat (Boolean b)))
+  Number n -> Pattern (PwTrivial (ValPat (Integer n)))
   unknown  -> error $ "Unknown switch pattern: " <> show unknown

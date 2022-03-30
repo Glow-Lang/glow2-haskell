@@ -26,7 +26,7 @@ import Glow.Prelude
 -- maybe just drop this?)
 newtype ByteString = WrappedByteString {toLBS :: LBS.ByteString}
   deriving stock (Eq, Ord)
-  deriving newtype (IsString)
+  deriving newtype (IsString, Semigroup)
 
 instance Show ByteString where
   show = show . toLBS
@@ -158,10 +158,19 @@ data GlowValue
 
 -- deriving anyclass (FromJSON, ToJSON) -- ToSchema, ToArgument)
 
-data Pattern
+data TrivialPattern
   = VarPat ByteString
   | ValPat GlowValue
   deriving stock (Generic, Eq, Show)
+
+data PatternWith pattern
+  = PwTrivial TrivialPattern
+  | PwAppCtor ByteString [pattern]
+  deriving stock (Generic, Eq, Show)
+
+newtype Pattern = Pattern (PatternWith Pattern)
+  deriving stock (Generic, Eq, Show)
+type ShallowPattern = PatternWith TrivialPattern
 
 newtype LedgerPubKey = LedgerPubKey ByteString
   deriving stock (Generic, Eq, Show)
