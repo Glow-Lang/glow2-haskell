@@ -66,8 +66,11 @@ library
   exposed-modules:
       Glow.Main
 
+    , Glow.Ast.Common
     , Glow.Ast.Surface
     , Glow.Ast.LastLeg
+    , Glow.Ast.HighLevel
+    , Glow.Ast.LowLevel
     , Glow.Ast.Targets.Lurk
     , Glow.Parser
     , Glow.Prelude

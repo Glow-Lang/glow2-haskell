@@ -28,7 +28,7 @@
 module Glow.Ast.LastLeg where
 
 import qualified Data.Map as M
-import qualified Data.Text.Lazy as LT
+import Glow.Ast.Common
 import Glow.Prelude
 
 -- | A Glow module. A module is a mapping of variablers to definitions,
@@ -41,10 +41,6 @@ data Module = Module
     modExterns :: M.Map Var Type
   }
   deriving (Show, Read, Eq)
-
--- | A variable
-newtype Var = Var LT.Text
-  deriving (Show, Read, Eq, Ord)
 
 -- | A function definition. In addition to the parameters,
 -- return type, and body that exist in the surface language,
