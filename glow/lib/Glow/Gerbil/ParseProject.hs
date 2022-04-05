@@ -15,7 +15,7 @@
 module Glow.Gerbil.ParseProject where
 
 import Control.Monad.State
-import Data.Aeson (eitherDecode)
+import qualified Data.ByteString.Base64.Lazy as B16
 import qualified Data.ByteString.Lazy.Char8 as LBS8
 import Data.Either (fromRight)
 import Data.Map.Strict (Map)
@@ -26,8 +26,8 @@ import Glow.Gerbil.Client.Types
     RawCreateParams (..),
     RawMoveParams (..),
   )
-import Glow.Gerbil.Types as Glow
 import Glow.Gerbil.ParseCommon
+import Glow.Gerbil.Types as Glow
 import Glow.Prelude
 import Prettyprinter
 import Text.Megaparsec hiding (Label, State)
@@ -209,7 +209,7 @@ parseStatement = \case
 parseSwitchCase :: SExpr -> (Pattern, [ProjectStatement])
 parseSwitchCase = \case
   List (pat : body) -> (parsePattern pat, parseStatement <$> body)
-  unknown           -> error $ "expected a pattern and body in a switch case: " <> show unknown
+  unknown -> error $ "expected a pattern and body in a switch case: " <> show unknown
 
 parseInteraction :: SExpr -> (ByteString, [ProjectStatement])
 parseInteraction = \case
@@ -247,9 +247,9 @@ parseVariableMap _datatypes = \case
         error $ "Invalid pair expression: " <> show unknown
 
     parseDatatype "signature" rawSignature =
-      case eitherDecode (LBS8.pack rawSignature) of
+      case B16.decode (LBS8.pack rawSignature) of
         Right signature ->
-          Signature (LedgerSignature signature)
+          Signature (LedgerSignature (WrappedByteString signature))
         Left err ->
           error $ "Invalid signature value: " <> err
     parseDatatype "pub-key" rawPubKey =
@@ -340,4 +340,3 @@ extractPrograms statements =
               Nothing ->
                 contract
          in (curParticipant, curLabel, newContract)
-
