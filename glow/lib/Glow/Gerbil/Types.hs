@@ -13,19 +13,10 @@
 
 module Glow.Gerbil.Types where
 
-import qualified Data.ByteString.Lazy as LBS
+import Data.ByteString.Lazy (ByteString)
 import qualified Data.Map.Strict as M
 import GHC.Generics hiding (Datatype)
 import Glow.Prelude
-
--- Wrapper, so we can define instances. (Do we actually need JSON instances?
--- maybe just drop this?)
-newtype ByteString = WrappedByteString {toLBS :: LBS.ByteString}
-  deriving stock (Eq, Ord)
-  deriving newtype (IsString)
-
-instance Show ByteString where
-  show = show . toLBS
 
 -- TODO: variable cleanup, only keep live variables between each transaction
 type GlowProjectContract = M.Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)
