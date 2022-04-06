@@ -52,6 +52,7 @@ data Type a
   | TyBool a
   | TyArray a (Type a)
   | TyPtr a (Type a)
+  | TyTuple a [Type a]
   deriving (Show, Read, Eq)
 
 data Block a = Block
