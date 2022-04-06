@@ -9,28 +9,61 @@
 -- * Lambdas have explicit capture lists (this will help when
 --   translating to low level IRs, and may help optimize
 --   serialization on plutus; see detailed discussion below).
--- * All side effects happen in an explicit effect monad, chained
---   together with a monadic bind operator. Most high level
---   constructs in Glow with simple operational semantics
---   still exist as primitives at this level (e.g. ADTs/match,
---   tuples, if/else, etc).
--- * The IR is not type checked. Down the line, we will likely
---   introduce a typed variant, but we leave this for future work.
+-- * The IR is typed, and we track certain kinds of effects
+--   via the type system. This facilitates type-directed
+--   translation to monadic effects, or actual side-effects
+--   depending on the target.
 module Glow.Ast.HighLevel where
 
 import Glow.Ast.Common
 import Glow.Prelude
 
+data Type a
+  = TyTuple a [Type a]
+  | TyFunc a [Type a] (Type a) EffType
+  | -- | Function with an explicit capture list:
+    TyFuncPtr a [Type a] [Type a] (Type a) EffType
+  deriving (Show, Read, Eq)
+
+-- | An effect type. these are nested; a function with
+-- effect type 'EtStateUpdates' can be called from within
+-- a function with effect type 'EtSetParticipant', using
+-- the 'ExLift' operator, but not vice-versa. The Ord is
+-- such that x >= y iff y may be invoked from x.
+data EffType
+  = -- | No effects permitted.
+    EtNone
+  | -- | Abort the current transaction.
+    EtAbort
+  | -- | Update balances and other contract state.
+    EtStateUpdates
+  | -- | Query the execution environment.
+    EtQuery
+  | -- | Switch participants. This causes a transaction commit.
+    EtSetParticipant
+  deriving (Show, Read, Eq, Enum, Bounded)
+
 data Expr a
   = ExLet a Var (Expr a) (Expr a)
-  | ExLambda a [Var] [Var] (Expr a)
+  | ExLambda a (Lambda a)
   | ExApply a Var [Var]
-  | ExEffBind a Var Var
-  | ExEffPure a Var
+  | -- | Lift an "less-effectful" computation into a "more effectful" one.
+    ExLift a (Expr a)
   | ExEffOp a (EffOp a)
   | ExConst a Constant
   | ExBuiltin a Builtin
+  | -- | Construct a closure from a lambda (with explicit capture list) and
+    -- a set of values for the captured variables.
+    ExCaputre a Var [Var]
   deriving (Show, Read, Eq)
+
+data Lambda a = Lambda
+  { lamCaptures :: [(Var, Type a)],
+    lamParams :: [(Var, Type a)],
+    lamReturnType :: Type a,
+    lamEffectType :: EffType,
+    lamBody :: Expr a
+  }
 
 data Builtin
   = BAdd
@@ -42,6 +75,14 @@ data Builtin
   -- TODO: fill out other logical operators
   -- TODO: fill out any other operators.
   deriving (Show, Read, Eq)
+
+effOpType :: EffOp a -> EffType
+effOpType = \case
+  EffGetParticipant _ -> EtQuery
+  EffSetParticipant _ _ -> EtSetParticipant
+  EffDeposit _ _ -> EtStateUpdates
+  EffWithdraw _ _ _ -> EtStateUpdates
+  EffRequire _ _ -> EtAbort
 
 data EffOp a
   = EffGetParticipant a
