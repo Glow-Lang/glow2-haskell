@@ -68,14 +68,12 @@ library
 
     , Glow.Ast.Common
     , Glow.Ast.Surface
-    , Glow.Ast.LastLeg
     , Glow.Ast.LiftedFunctions
     , Glow.Ast.Targets.Lurk
     , Glow.Parser
     , Glow.Prelude
     , Glow.Runtime.Interaction
     , Glow.Runtime.Interaction.STM
-    , Glow.Translate.GerbilTypeToLastLeg
     , Glow.Translate.LurkToSExpr
     , Glow.Consensus.Local
     , Glow.Consensus.StateChannel
@@ -107,4 +105,3 @@ test-suite tests
     , Tests.Parser
     , Tests.Runtime.Interaction
     , Tests.Lurk
-    , Tests.TranslateType
