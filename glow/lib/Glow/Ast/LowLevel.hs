@@ -83,19 +83,19 @@ data CallStmt a
 
 data Branch a
   = BrReturn a (Expr a)
-  | BrJump a Name [Expr a]
-  | BrSwitch a (Expr a) [SwitchCase a] (Maybe (SwitchTarget a))
+  | BrJump a (JumpTarget a)
+  | BrSwitch a (Expr a) [SwitchCase a] (Maybe (JumpTarget a))
   deriving (Show, Read, Eq)
 
 data SwitchCase a = SwitchCase
   { scMatchValue :: Constant,
-    scTarget :: SwitchTarget a
+    scTarget :: JumpTarget a
   }
   deriving (Show, Read, Eq)
 
-data SwitchTarget a = SwitchTarget
-  { stName :: Name,
-    stArgs :: [Expr a]
+data JumpTarget a = JumpTarget
+  { jtName :: Name,
+    jtArgs :: [Expr a]
   }
   deriving (Show, Read, Eq)
 
