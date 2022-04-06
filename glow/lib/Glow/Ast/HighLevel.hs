@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 -- | This module defines a high-level intermediate representation;
 -- at this point we fork off between high-level targets like lurk
 -- and pluts, and lower-level, machine-like targets.
@@ -15,6 +17,7 @@
 --   depending on the target.
 module Glow.Ast.HighLevel where
 
+import qualified Data.Map.Strict as M
 import Glow.Ast.Common
 import Glow.Prelude
 
