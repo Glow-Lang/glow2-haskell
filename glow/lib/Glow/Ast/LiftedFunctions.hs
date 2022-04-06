@@ -24,7 +24,8 @@ data TopStmt
   | TsDefData Id [TypeVar] [Variant]
   | TsDefInteraction Id InteractionDef
   | TsDefLambda Id (Lambda BodyStmt)
-  | TsAtPart Id (Lambda PartStmt)
+  | -- | participant id, function id, function def:
+    TsAtPart Id Id (Lambda PartStmt)
   deriving (Show, Read, Eq)
 
 data InteractionDef = InteractionDef
