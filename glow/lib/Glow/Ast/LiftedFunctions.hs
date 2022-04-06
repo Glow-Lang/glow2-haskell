@@ -36,7 +36,7 @@ data InteractionDef = InteractionDef
   deriving (Show, Read, Eq)
 
 data BodyStmt
-  = BsPartStmt PartStmt
+  = BsPartStmt (Maybe Id) PartStmt
   | BsWithdraw Id (Record ArgExpr)
   | BsDeposit Id (Record ArgExpr)
   | BsPublish Id ArgExpr
