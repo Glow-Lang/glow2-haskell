@@ -2,34 +2,13 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS -fplugin-opt Language.PlutusTx.Plugin:debug-context #-}
-{-# OPTIONS_GHC -fno-specialise #-}
-{-# OPTIONS_GHC -fno-strictness #-}
 
 module Glow.Gerbil.Types where
 
-import Control.Monad.Fail (fail)
-import Data.Aeson (FromJSON (..), ToJSON (..))
-import qualified Data.ByteString.Base64.Lazy as B16
-import qualified Data.ByteString.Lazy as LBS
-import qualified Data.ByteString.Lazy.Char8 as LBS8
+import Data.ByteString.Lazy (ByteString)
 import qualified Data.Map.Strict as M
 import GHC.Generics hiding (Datatype)
 import Glow.Prelude
-
--- Wrapper, so we can define instances. (Do we actually need JSON instances?
--- maybe just drop this?)
-newtype ByteString = WrappedByteString {toLBS :: LBS.ByteString}
-  deriving stock (Eq, Ord)
-  deriving newtype (IsString)
-
-instance Show ByteString where
-  show = show . toLBS
 
 -- TODO: variable cleanup, only keep live variables between each transaction
 type GlowProjectContract = M.Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)
@@ -45,20 +24,6 @@ type AssetMap = M.Map ByteString GlowValueRef
 type ProjectFunction = (ByteString, [ProjectStatement])
 
 type ExecutionPoint = ByteString
-
-instance ToJSON ByteString where
-  toJSON =
-    toLBS
-      >>> B16.encode
-      >>> LBS8.unpack
-      >>> toJSON
-
-instance FromJSON ByteString where
-  parseJSON v = do
-    str <- parseJSON v
-    case B16.decode (LBS.pack str) of
-      Right bs -> pure (WrappedByteString bs)
-      Left e -> fail e
 
 -- | An MLsub type, as emitted by the frontend.
 data Type
@@ -100,8 +65,6 @@ data Statement interactionDef
   | Switch GlowValueRef [(Pattern, [(Statement interactionDef)])]
   deriving stock (Generic, Eq, Show)
 
--- deriving (FromJSON, ToJSON)
-
 data AnfInteractionDef = AnfInteractionDef
   { aidParticipantNames :: [ByteString],
     aidAssetNames :: [ByteString],
@@ -109,8 +72,6 @@ data AnfInteractionDef = AnfInteractionDef
     aidBody :: [AnfStatement]
   }
   deriving stock (Generic, Eq, Show)
-
--- deriving (FromJSON, ToJSON)
 
 type AnfStatement = Statement AnfInteractionDef
 
@@ -121,8 +82,6 @@ data ProjectInteractionDef = ProjectInteractionDef
     pidInteractions :: [(ByteString, [ProjectStatement])]
   }
   deriving stock (Generic, Eq, Show)
-
--- deriving (FromJSON, ToJSON)
 
 type ProjectStatement = Statement ProjectInteractionDef
 
@@ -136,15 +95,11 @@ data Expression
   | TrvExpr GlowValueRef
   deriving stock (Generic, Eq, Show)
 
--- deriving anyclass (FromJSON, ToJSON)
-
 -- TODO: how to encode expected type?
 data GlowValueRef
   = Explicit GlowValue
   | Variable ByteString
   deriving stock (Generic, Eq, Show)
-
--- deriving anyclass (FromJSON, ToJSON)
 
 data GlowValue
   = Constructor ByteString Integer [GlowValue]
@@ -156,8 +111,6 @@ data GlowValue
   | Unit
   deriving stock (Generic, Eq, Show)
 
--- deriving anyclass (FromJSON, ToJSON) -- ToSchema, ToArgument)
-
 data Pattern
   = VarPat ByteString
   | ValPat GlowValue
@@ -167,23 +120,6 @@ newtype LedgerPubKey = LedgerPubKey ByteString
   deriving stock (Generic, Eq, Show)
   deriving newtype (IsString)
 
--- deriving anyclass (FromJSON, ToJSON) -- ToSchema, ToArgument)
-
 newtype LedgerSignature = LedgerSignature ByteString
   deriving stock (Generic, Eq, Show)
   deriving newtype (IsString)
-
--- deriving anyclass (FromJSON, ToJSON) -- ToSchema, ToArgument)
-
-{-
-data GlowDatum = GlowDatum
-  { gdContract :: GlowProjectContract,
-    gdVariableMap :: VariableMap,
-    -- separate from variable map to prevent mutual recursion
-    gdFunctionMap :: FunctionMap,
-    gdDatatypeMap :: DatatypeMap,
-    gdExecutionPoint :: Maybe ExecutionPoint,
-    gdDeadline :: Ledger.Slot
-  }
-  deriving stock (Generic, Eq, Show)
--}

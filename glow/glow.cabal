@@ -71,6 +71,7 @@ library
     , Glow.Ast.LastLeg
     , Glow.Ast.HighLevel
     , Glow.Ast.LowLevel
+    , Glow.Ast.LiftedFunctions
     , Glow.Ast.Targets.Lurk
     , Glow.Parser
     , Glow.Prelude
