@@ -18,6 +18,12 @@ module Glow.Ast.HighLevel where
 import Glow.Ast.Common
 import Glow.Prelude
 
+data Program a = Program
+  { progFuncs :: M.Map Var (Lambda a),
+    -- | Name of entry point in progFuncs.
+    progMain :: Var
+  }
+
 data Type a
   = TyTuple a [Type a]
   | TyFunc a [Type a] (Type a) EffType
@@ -45,7 +51,6 @@ data EffType
 
 data Expr a
   = ExLet a Var (Expr a) (Expr a)
-  | ExLambda a (Lambda a)
   | ExApply a Var [Var]
   | -- | Lift an "less-effectful" computation into a "more effectful" one.
     ExLift a (Expr a)
