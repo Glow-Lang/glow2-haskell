@@ -63,7 +63,7 @@ data FrontEndData = FrontEndData
     -- | Output of @glow pass anf@
     fedAnf :: [GT.AnfStatement],
     -- | Type table, extracted from the finaltypetable output of @glow pass project@.
-    fedTypeTable :: Map ByteString Type
+    fedTypeTable :: Map LBS.ByteString Type
   }
   deriving (Show, Eq)
 

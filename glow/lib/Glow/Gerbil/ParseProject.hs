@@ -15,7 +15,8 @@
 module Glow.Gerbil.ParseProject where
 
 import Control.Monad.State
-import Data.Aeson (eitherDecode)
+import qualified Data.ByteString.Base64.Lazy as B16
+import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LBS8
 import Data.Either (fromRight)
 import Data.Map.Strict (Map)
@@ -26,8 +27,8 @@ import Glow.Gerbil.Client.Types
     RawCreateParams (..),
     RawMoveParams (..),
   )
-import Glow.Gerbil.Types as Glow
 import Glow.Gerbil.ParseCommon
+import Glow.Gerbil.Types as Glow
 import Glow.Prelude
 import Prettyprinter
 import Text.Megaparsec hiding (Label, State)
@@ -88,7 +89,7 @@ parseCommandPath filePath = do
               <> "Consensus program:" <+> line
               <> prettyContract (_consensusProgram program)
               <> line
-              <> vsep (fmap (\(participant, contract) -> pretty (bs8unpack participant) <> " program:" <+> line <> prettyContract contract) (Map.toList $ _participantPrograms program))
+              <> vsep (fmap (\(participant, contract) -> pretty (LBS8.unpack participant) <> " program:" <+> line <> prettyContract contract) (Map.toList $ _participantPrograms program))
     Left err ->
       errorBundlePretty err
 
@@ -107,7 +108,7 @@ parseCommandDebug = do
               <> "Consensus program:" <+> line
               <> prettyContract (_consensusProgram program)
               <> line
-              <> vsep (fmap (\(participant, contract) -> pretty (bs8unpack participant) <> " program:" <+> line <> prettyContract contract) (Map.toList $ _participantPrograms program))
+              <> vsep (fmap (\(participant, contract) -> pretty (LBS8.unpack participant) <> " program:" <+> line <> prettyContract contract) (Map.toList $ _participantPrograms program))
     Left err ->
       errorBundlePretty err
 
@@ -134,9 +135,9 @@ parseModule = \case
 parseStatement :: SExpr -> ProjectStatement
 parseStatement = \case
   Builtin "@label" [Atom name] ->
-    Label $ bs8pack name
+    Label $ LBS8.pack name
   Builtin "@debug-label" [Atom name] ->
-    DebugLabel $ bs8pack name
+    DebugLabel $ LBS8.pack name
   Builtin "deftype" [Atom _name, _typeDefinition] ->
     error "monomorphic type not supported"
   Builtin "deftype" [List (Atom _name : _typeVariables), _typeDefinition] ->
@@ -164,15 +165,15 @@ parseStatement = \case
       ] ->
       DefineInteraction
         ProjectInteractionDef
-          { pidParticipantNames = bs8pack . parseName <$> participantNames,
-            pidAssetNames = bs8pack . parseName <$> assetNames,
-            pidArgumentNames = bs8pack . parseName <$> argumentNames,
+          { pidParticipantNames = LBS8.pack . parseName <$> participantNames,
+            pidAssetNames = LBS8.pack . parseName <$> assetNames,
+            pidArgumentNames = LBS8.pack . parseName <$> argumentNames,
             pidInteractions = parseInteraction <$> interactions
           }
   Builtin "def" [Atom variableName, Builtin "λ" (List argNames : Pair _startLabel _endLabel : body)] ->
-    DefineFunction (bs8pack variableName) (bs8pack . parseName <$> argNames) (parseStatement <$> body)
+    DefineFunction (LBS8.pack variableName) (LBS8.pack . parseName <$> argNames) (parseStatement <$> body)
   Builtin "def" [Atom variableName, sexpr] ->
-    Define (bs8pack variableName) (parseExpression sexpr)
+    Define (LBS8.pack variableName) (parseExpression sexpr)
   Builtin "ignore!" [sexpr] ->
     Ignore (parseExpression sexpr)
   Builtin "return" [sexpr] ->
@@ -209,14 +210,14 @@ parseStatement = \case
 parseSwitchCase :: SExpr -> (Pattern, [ProjectStatement])
 parseSwitchCase = \case
   List (pat : body) -> (parsePattern pat, parseStatement <$> body)
-  unknown           -> error $ "expected a pattern and body in a switch case: " <> show unknown
+  unknown -> error $ "expected a pattern and body in a switch case: " <> show unknown
 
 parseInteraction :: SExpr -> (ByteString, [ProjectStatement])
 parseInteraction = \case
   Builtin participantName statements ->
-    (bs8pack participantName, parseStatement <$> statements)
+    (LBS8.pack participantName, parseStatement <$> statements)
   List (Bool False : statements) ->
-    (bs8pack "consensus", parseStatement <$> statements)
+    (LBS8.pack "consensus", parseStatement <$> statements)
   unknown ->
     error $ "Invalid participant interaction expression: " <> show unknown
 
@@ -233,21 +234,21 @@ parseVariableMap _datatypes = \case
               Number number ->
                 Integer number
               SExpr.String string ->
-                Glow.ByteString (bs8pack string)
+                Glow.ByteString (LBS8.pack string)
               Bool bool ->
                 Boolean bool
               List [Atom cons, SExpr.String val] ->
                 parseDatatype cons val
               unknown ->
                 error $ "Invalid variable value: " <> show unknown
-         in (bs8pack varName, value)
+         in (LBS8.pack varName, value)
       List [Atom varName, Atom cons, SExpr.String val] ->
-        (bs8pack varName, parseDatatype cons val)
+        (LBS8.pack varName, parseDatatype cons val)
       unknown ->
         error $ "Invalid pair expression: " <> show unknown
 
     parseDatatype "signature" rawSignature =
-      case eitherDecode (LBS8.pack rawSignature) of
+      case B16.decode (LBS8.pack rawSignature) of
         Right signature ->
           Signature (LedgerSignature signature)
         Left err ->
@@ -302,7 +303,7 @@ extractPrograms statements =
           let (_, _, result) = execState (traverse processBodyStatement consensusStatements) (Nothing, "begin0", Map.empty)
            in (name, result)
         Nothing ->
-          error $ "Contract is missing " <> bs8unpack name <> " code."
+          error $ "Contract is missing " <> LBS8.unpack name <> " code."
 
     processBodyStatement = \case
       SetParticipant newParticipant ->
@@ -340,4 +341,3 @@ extractPrograms statements =
               Nothing ->
                 contract
          in (curParticipant, curLabel, newContract)
-

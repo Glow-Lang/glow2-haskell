@@ -5,6 +5,7 @@
 module Glow.Gerbil.Client.Types where
 
 import Data.Aeson hiding (Value)
+import Data.ByteString.Lazy (ByteString)
 import qualified Data.Map.Strict as M
 import GHC.Generics
 import Glow.Gerbil.Types
