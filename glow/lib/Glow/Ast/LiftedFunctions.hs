@@ -1,7 +1,6 @@
 module Glow.Ast.LiftedFunctions where
 
 import qualified Data.ByteString as BS
-import Data.List.NonEmpty (NonEmpty)
 import qualified Data.Map.Strict as M
 import Data.Text.Lazy as LT
 import Glow.Prelude
@@ -74,7 +73,7 @@ data Expr
   | -- | Question: can digest actually take multiple arguments? What does that do?
     ExDigest [ArgExpr]
   | ExSign ArgExpr
-  | ExCapture ArgExpr (NonEmpty ArgExpr)
+  | ExCapture ArgExpr [ArgExpr]
   | ExApp ArgExpr [ArgExpr]
   deriving (Show, Read, Eq)
 
@@ -85,7 +84,7 @@ data Lambda stmt = Lambda
   { lamCaptures :: [Id],
     -- | N.B. this representation allows nullary functions; is that what we intend?
     lamParams :: [Id],
-    lamBody :: NonEmpty stmt
+    lamBody :: [stmt]
   }
   deriving (Show, Read, Eq)
 
