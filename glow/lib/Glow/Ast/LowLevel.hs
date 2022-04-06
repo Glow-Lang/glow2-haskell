@@ -103,6 +103,7 @@ data JumpTarget a = JumpTarget
 data Expr a
   = ExVar a Var
   | ExConst a Constant
+  | ExFuncPtr a Name
   | ExApplyOp a (Op a) [Expr a]
   deriving (Show, Read, Eq)
 
@@ -113,10 +114,4 @@ data Op a
   | OpOr
   | OpAnd
   | OpLoad (Type a)
-  deriving (Show, Read, Eq)
-
-data Constant
-  = CBool !Bool
-  | CInt IntType !Integer
-  | CFuncPtr Name
   deriving (Show, Read, Eq)

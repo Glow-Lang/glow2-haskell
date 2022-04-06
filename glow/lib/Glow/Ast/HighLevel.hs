@@ -97,8 +97,3 @@ data EffOp a
   | EffRequire a Var
   -- TODO: fill out any other effects.
   deriving (Show, Read, Eq)
-
-data Constant
-  = CBool !Bool
-  | CInteger IntType !Integer
-  deriving (Show, Read, Eq)
