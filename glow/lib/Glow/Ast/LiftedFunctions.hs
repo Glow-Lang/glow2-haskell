@@ -56,7 +56,7 @@ data PartStmt
 
 data Switch stmt = Switch
   { swArg :: ArgExpr,
-    swBranches :: NonEmpty (Pat, NonEmpty stmt)
+    swBranches :: [(Pat, [stmt])]
   }
   deriving (Show, Read, Eq)
 
