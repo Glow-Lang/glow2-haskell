@@ -68,6 +68,7 @@ library
 
     , Glow.Ast.Surface
     , Glow.Ast.LastLeg
+    , Glow.Ast.LiftedFunctions
     , Glow.Ast.Targets.Lurk
     , Glow.Parser
     , Glow.Prelude
