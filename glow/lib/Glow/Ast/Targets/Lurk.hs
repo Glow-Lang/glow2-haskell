@@ -23,6 +23,7 @@ data Expr a
   | ExUnary a UnaryOp (Expr a)
   | ExBegin a [Expr a] (Expr a)
   | ExCurrentEnv a
+  | ExFieldElem a Int
   | -- | @eval@ with an optional environment
     ExEval a (Expr a) (Maybe (Expr a))
   | ExSymbol a Symbol

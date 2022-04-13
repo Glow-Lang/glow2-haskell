@@ -58,6 +58,11 @@ common shared-opts
     , prettyprinter ^>=1.7.1
     , sexpr-parser ^>=0.2.2
     , typed-process ^>=0.2.8
+    , lens
+    , haskeline
+    , ansi-terminal
+    , monad-loops
+    , transformers
   default-language:    Haskell2010
 
 library
@@ -75,8 +80,10 @@ library
     , Glow.Runtime.Interaction.STM
     , Glow.Translate.GerbilTypeToLastLeg
     , Glow.Translate.LurkToSExpr
+    , Glow.Translate.LurkFromAgdaDev    
     , Glow.Consensus.Local
     , Glow.Consensus.StateChannel
+    , Glow.Consensus.LurkMock
     , Glow.StateChannel
 
     , Glow.Gerbil.Types
@@ -91,6 +98,18 @@ executable glow
   build-depends: glow
   hs-source-dirs: exe
   main-is: Main.hs
+
+executable lurk-from-agda
+  import: shared-opts
+  build-depends: glow
+  hs-source-dirs: exe
+  main-is: LurkFromAgda.hs
+
+executable lurk-consensus-mock
+  import: shared-opts
+  build-depends: glow
+  hs-source-dirs: exe
+  main-is: LurkConsensusMock.hs      
 
 test-suite tests
   import: shared-opts

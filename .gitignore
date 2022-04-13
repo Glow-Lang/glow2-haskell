@@ -15,3 +15,15 @@ cabal.project.local
 # Code coverage:
 .hpc
 *.tix
+
+
+# emacs
+
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
