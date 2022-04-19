@@ -50,7 +50,7 @@ data Type
 data Statement interactionDef
   = Label ByteString
   | DebugLabel ByteString
-  | DefineInteraction interactionDef
+  | DefineInteraction ByteString interactionDef
   | Define ByteString Expression
   | DefineFunction ByteString [ByteString] [(Statement interactionDef)]
   | DefineDatatype ByteString [(ByteString, Integer)]

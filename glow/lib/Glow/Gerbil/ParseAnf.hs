@@ -35,7 +35,7 @@ parseStatement = \case
     error "polymorphic datatype not supported"
   Builtin
     "def"
-    [ Atom _contractName,
+    [ Atom contractName,
       Builtin
         "@make-interaction"
         ( List
@@ -51,6 +51,7 @@ parseStatement = \case
           )
       ] ->
       DefineInteraction
+        (BS8.pack contractName)
         AnfInteractionDef
           { aidParticipantNames = BS8.pack . parseName <$> participantNames,
             aidAssetNames = BS8.pack . parseName <$> assetNames,

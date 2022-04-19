@@ -148,7 +148,7 @@ parseStatement = \case
     error "polymorphic datatype not supported"
   Builtin
     "def"
-    [ Atom _contractName,
+    [ Atom contractName,
       Builtin
         "@make-interaction"
         ( List
@@ -164,6 +164,7 @@ parseStatement = \case
           )
       ] ->
       DefineInteraction
+        (BS8.pack contractName)
         ProjectInteractionDef
           { pidParticipantNames = BS8.pack . parseName <$> participantNames,
             pidAssetNames = BS8.pack . parseName <$> assetNames,
@@ -280,6 +281,7 @@ extractPrograms statements =
 
     processHeaderStatement = \case
       DefineInteraction
+        _contractName
         ProjectInteractionDef
           { pidParticipantNames = participants,
             pidArgumentNames = arguments,
