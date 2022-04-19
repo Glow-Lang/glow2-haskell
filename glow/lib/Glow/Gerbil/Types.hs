@@ -47,6 +47,7 @@ data Statement interactionDef
   | DefineInteraction ByteString interactionDef
   | Define ByteString Expression
   | DefineFunction ByteString [ByteString] [(Statement interactionDef)]
+  -- expand DefineDataType variant to express more things
   | DefineDatatype ByteString [(ByteString, Integer)]
   | AtParticipant GlowValueRef (Statement interactionDef)
   | SetParticipant GlowValueRef
