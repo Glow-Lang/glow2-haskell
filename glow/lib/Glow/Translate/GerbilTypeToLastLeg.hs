@@ -3,7 +3,7 @@
 -- | Translate Glow.Gerbil.Types Type to Glow.Ast.
 module Glow.Translate.GerbilTypeToLastLeg where
 
-import Data.ByteString.Lazy (ByteString)
+import Data.ByteString (ByteString)
 import qualified Glow.Ast.LastLeg as GAL
 import Glow.Gerbil.Types as GGT
 import Glow.Prelude
@@ -17,7 +17,7 @@ translateType = \case
   TyName name -> translateTypeName name
   TyNameSubtype name _ -> translateTypeName name
   TyTuple elements -> GAL.TTuple (translateType <$> elements)
-  TyUnknown bs -> error ("Glow.Translate.GerbilTypeToLastLeg.translateType: unknown type " <> show bs)
+  t -> error ("Glow.Translate.GerbilTypeToLastLeg.translateType: unknown type " <> show t)
 
 -- TODO:
 -- - [ ] type:var

@@ -68,7 +68,6 @@ library
 
     , Glow.Ast.Common
     , Glow.Ast.Surface
-    , Glow.Ast.LastLeg
     , Glow.Ast.HighLevel
     , Glow.Ast.LowLevel
     , Glow.Ast.LiftedFunctions
@@ -77,7 +76,6 @@ library
     , Glow.Prelude
     , Glow.Runtime.Interaction
     , Glow.Runtime.Interaction.STM
-    , Glow.Translate.GerbilTypeToLastLeg
     , Glow.Translate.LurkToSExpr
     , Glow.Consensus.Local
     , Glow.Consensus.StateChannel
@@ -105,7 +103,7 @@ test-suite tests
   hs-source-dirs: tests
   main-is: Main.hs
   other-modules:
-      Tests.Parser
+      Tests.AstCommon
+    , Tests.Parser
     , Tests.Runtime.Interaction
     , Tests.Lurk
-    , Tests.TranslateType
