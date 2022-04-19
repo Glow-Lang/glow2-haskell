@@ -10,7 +10,7 @@ module Glow.Gerbil.ImportSExpr
   )
 where
 
-import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString as BS
 import Data.Map.Strict (Map)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
@@ -63,7 +63,7 @@ data FrontEndData = FrontEndData
     -- | Output of @glow pass anf@
     fedAnf :: [GT.AnfStatement],
     -- | Type table, extracted from the finaltypetable output of @glow pass project@.
-    fedTypeTable :: Map LBS.ByteString Type
+    fedTypeTable :: Map BS.ByteString Type
   }
   deriving (Show, Eq)
 
@@ -82,7 +82,7 @@ frontEndData params = do
           P.proc (fepExePath params) ["pass", passName, fepFile params]
             & P.readProcessStdout_
         let input =
-              T.unpack $ decodeUtf8 (LBS.toStrict bytes)
+              T.unpack $ decodeUtf8 (BS.toStrict bytes)
             parseResult =
               runParser
                 parseOutputs

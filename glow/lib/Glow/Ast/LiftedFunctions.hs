@@ -1,12 +1,14 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Glow.Ast.LiftedFunctions where
 
 import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as M
-import Data.Text.Lazy as LT
+import Glow.Ast.Common
 import Glow.Prelude
 
-newtype Id = Id LT.Text
-  deriving (Show, Read, Eq, Ord)
+newtype Id = Id BS.ByteString
+  deriving (Show, Read, Eq, Ord, IsString)
 
 newtype TypeVar = TypeVar Id
   deriving (Show, Read, Eq, Ord)
@@ -38,13 +40,14 @@ data BodyStmt
   = BsPartStmt (Maybe Id) PartStmt
   | BsWithdraw Id (Record ArgExpr)
   | BsDeposit Id (Record ArgExpr)
-  | BsPublish Id ArgExpr
+  | BsPublish Id Id
   | BsSwitch (Switch BodyStmt)
   deriving (Show, Read, Eq)
 
 data PartStmt
   = PsLabel Id
   | PsDebugLabel Id
+  | PsDef Id Expr
   | PsIgnore Expr
   | PsReturn Expr
   | PsRequire ArgExpr
@@ -89,7 +92,8 @@ data Lambda stmt = Lambda
   deriving (Show, Read, Eq)
 
 data ArgExpr
-  = AEConst Constant
+  = AEVar Id
+  | AEConst Constant
   | AEEmptyTuple
   deriving (Show, Read, Eq)
 
@@ -111,10 +115,4 @@ data Type
   | TyTuple [Type]
   | TyRecord (Record Type)
   | TyFunc [Type] Type
-  deriving (Show, Read, Eq)
-
-data Constant
-  = CInteger !Integer
-  | CByteString !BS.ByteString
-  | CBool !Bool
   deriving (Show, Read, Eq)
