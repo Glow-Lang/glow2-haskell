@@ -62,7 +62,7 @@ data Expr a
   | ExBuiltin a Builtin
   | -- | Construct a closure from a lambda (with explicit capture list) and
     -- a set of values for the captured variables.
-    ExCaputre a Var [Var]
+    ExCapture a Var [Var]
   deriving (Show, Read, Eq)
 
 data Lambda a = Lambda
