@@ -11,7 +11,11 @@ newtype Name = Name LT.Text
 
 data Program a = Program
   { pInfo :: a,
+    -- | Name of function that is the entry point/"main" function for the program:
     pEntryPoint :: Name,
+    -- | Name of a function run *before* the entry point, responsible for initializing
+    -- global variables:
+    pInitFn :: Name,
     pDefs :: M.Map Name (Definition a)
   }
   deriving (Show, Read, Eq)
