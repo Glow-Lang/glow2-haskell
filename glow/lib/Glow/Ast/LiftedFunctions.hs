@@ -1,8 +1,8 @@
 module Glow.Ast.LiftedFunctions where
 
-import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as M
 import Data.Text.Lazy as LT
+import Glow.Ast.Common
 import Glow.Prelude
 
 newtype Id = Id LT.Text
@@ -111,10 +111,4 @@ data Type
   | TyTuple [Type]
   | TyRecord (Record Type)
   | TyFunc [Type] Type
-  deriving (Show, Read, Eq)
-
-data Constant
-  = CInteger !Integer
-  | CByteString !BS.ByteString
-  | CBool !Bool
   deriving (Show, Read, Eq)
