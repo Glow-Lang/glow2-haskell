@@ -5,7 +5,7 @@
 
 module Glow.Gerbil.Types where
 
-import Data.ByteString.Lazy (ByteString)
+import Data.ByteString (ByteString)
 import qualified Data.Map.Strict as M
 import GHC.Generics hiding (Datatype)
 import Glow.Prelude

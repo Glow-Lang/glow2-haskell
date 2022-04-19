@@ -5,7 +5,7 @@
 -- phase.
 module Glow.Gerbil.ParseAnf where
 
-import qualified Data.ByteString.Lazy.Char8 as LBS8
+import qualified Data.ByteString.Char8 as BS8
 import Glow.Gerbil.ParseCommon
 import Glow.Gerbil.Types as Glow
 import Glow.Prelude
@@ -22,9 +22,9 @@ parseModule = \case
 parseStatement :: SExpr -> AnfStatement
 parseStatement = \case
   Builtin "@label" [Atom name] ->
-    Label $ LBS8.pack name
+    Label $ BS8.pack name
   Builtin "@debug-label" [Atom name] ->
-    DebugLabel $ LBS8.pack name
+    DebugLabel $ BS8.pack name
   Builtin "deftype" [Atom _name, _typeDefinition] ->
     error "monomorphic type not supported"
   Builtin "deftype" [List (Atom _name : _typeVariables), _typeDefinition] ->
@@ -52,15 +52,15 @@ parseStatement = \case
       ] ->
       DefineInteraction
         AnfInteractionDef
-          { aidParticipantNames = LBS8.pack . parseName <$> participantNames,
-            aidAssetNames = LBS8.pack . parseName <$> assetNames,
-            aidArgumentNames = LBS8.pack . parseName <$> argumentNames,
+          { aidParticipantNames = BS8.pack . parseName <$> participantNames,
+            aidAssetNames = BS8.pack . parseName <$> assetNames,
+            aidArgumentNames = BS8.pack . parseName <$> argumentNames,
             aidBody = parseStatement <$> body
           }
   Builtin "def" [Atom variableName, Builtin "λ" (List argNames : body)] ->
-    DefineFunction (LBS8.pack variableName) (LBS8.pack . parseName <$> argNames) (parseStatement <$> body)
+    DefineFunction (BS8.pack variableName) (BS8.pack . parseName <$> argNames) (parseStatement <$> body)
   Builtin "def" [Atom variableName, sexpr] ->
-    Define (LBS8.pack variableName) (parseExpression sexpr)
+    Define (BS8.pack variableName) (parseExpression sexpr)
   Builtin "ignore!" [sexpr] ->
     Ignore (parseExpression sexpr)
   Builtin "return" [sexpr] ->

@@ -3,8 +3,8 @@
 
 module Glow.Gerbil.ParseCommon where
 
-import Data.ByteString.Lazy (ByteString)
-import qualified Data.ByteString.Lazy.Char8 as LBS8
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as BS8
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Glow.Gerbil.Types as Glow
@@ -27,7 +27,7 @@ parseTable p (List (Atom "hash" : kvs)) = Map.fromList $ mapMaybe (parseKV p) kv
 parseTable _ sexp = error $ "parseTable: S-expression is not a hash map: " <> show sexp
 
 parseKV :: (SExpr -> a) -> SExpr -> Maybe (ByteString, a)
-parseKV p (List [Atom k, v]) = Just (LBS8.pack k, p v)
+parseKV p (List [Atom k, v]) = Just (BS8.pack k, p v)
 parseKV _ (List [_, _]) = Nothing
 parseKV _ sexp = error $ "parseKV: S-expression is not a key-value pair: " <> show sexp
 
@@ -35,24 +35,24 @@ parseType :: SExpr -> Type
 parseType (List [Atom "type:arrow", List (Atom "@list" : params), result]) =
   TyArrow (map parseType params) (parseType result)
 parseType (List [Atom "type:name", List [Atom "quote", Atom name]]) =
-  TyName (LBS8.pack name)
+  TyName (BS8.pack name)
 parseType (List [Atom "type:name-subtype", List [Atom "quote", Atom name], typ]) =
-  TyNameSubtype (LBS8.pack name) (parseType typ)
+  TyNameSubtype (BS8.pack name) (parseType typ)
 parseType (List [Atom "type:tuple", List (Atom "@list" : elts)]) =
   TyTuple (map parseType elts)
 parseType sexp =
-  TyUnknown (LBS8.pack $ show sexp)
+  TyUnknown (BS8.pack $ show sexp)
 
 parseAssetMap :: [SExpr] -> AssetMap
 parseAssetMap = Map.fromList . map parseField
   where
-    parseField (Builtin name [Atom amountName]) = (LBS8.pack name, var amountName)
+    parseField (Builtin name [Atom amountName]) = (BS8.pack name, var amountName)
     parseField field = error $ "Malformed field in asset map: " <> show field
 
 parseExpression :: SExpr -> Expression
 parseExpression = \case
   Builtin "expect-published" [Builtin "quote" [variableName]] ->
-    ExpectPublished (LBS8.pack $ parseName variableName)
+    ExpectPublished (BS8.pack $ parseName variableName)
   Builtin "@app" (fun : args) ->
     AppExpr (parseTrivialExpression fun) (parseTrivialExpression <$> args)
   Builtin "==" [a, b] ->
@@ -71,7 +71,7 @@ parseExpression = \case
     error $ "Unknown expression in contract body: " <> show unknown
 
 var :: String -> GlowValueRef
-var = Variable . LBS8.pack
+var = Variable . BS8.pack
 
 parseName :: SExpr -> String
 parseName = \case
@@ -87,7 +87,7 @@ parseTrivialExpression = \case
   Atom name -> var name
   List [Atom "@tuple"] -> Explicit Unit
   Number n -> Explicit (Integer n)
-  String s -> Explicit (ByteString (LBS8.pack s))
+  String s -> Explicit (ByteString (BS8.pack s))
   unknown ->
     error $ "Unknown expression in trivial-expression position: " <> show unknown
 

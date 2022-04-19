@@ -3,7 +3,7 @@
 -- | Translate Glow.Gerbil.Types Type to Glow.Ast.
 module Glow.Translate.GerbilTypeToLastLeg where
 
-import Data.ByteString.Lazy (ByteString)
+import Data.ByteString (ByteString)
 import qualified Glow.Ast.LastLeg as GAL
 import Glow.Gerbil.Types as GGT
 import Glow.Prelude
