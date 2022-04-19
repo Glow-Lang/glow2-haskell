@@ -4,6 +4,10 @@ module Glow.Ast.Common where
 import qualified Data.ByteString as BS
 import Glow.Prelude
 
+-- | A variable
+newtype Var = Var BS.ByteString
+  deriving (Show, Read, Eq, Ord)
+
 data IntType = IntType
   { itSigned :: !Bool,
     itNumBits :: !Integer
@@ -28,9 +32,10 @@ intType i =
 bitLength :: (Bits i, Integral i) => i -> Integer
 bitLength i =
   if i == 0 || i == -1
-  then 0
-  else let n = abs (popCount i)
-        in toInteger n + bitLength (shiftR i n)
+    then 0
+    else
+      let n = abs (popCount i)
+       in toInteger n + bitLength (shiftR i n)
 
 ceil8 :: Integral i => i -> i
 ceil8 i =

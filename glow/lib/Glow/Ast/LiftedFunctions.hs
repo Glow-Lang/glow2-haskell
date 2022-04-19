@@ -111,6 +111,7 @@ data Pat
 
 data Type
   = TyId Id [Type] -- both id and (id type ...)
+  | TyInt IntType
   | TyVar TypeVar
   | TyTuple [Type]
   | TyRecord (Record Type)

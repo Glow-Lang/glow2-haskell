@@ -68,6 +68,8 @@ library
 
     , Glow.Ast.Common
     , Glow.Ast.Surface
+    , Glow.Ast.HighLevel
+    , Glow.Ast.LowLevel
     , Glow.Ast.LiftedFunctions
     , Glow.Ast.Targets.Lurk
     , Glow.Parser
