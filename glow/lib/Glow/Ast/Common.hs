@@ -2,11 +2,10 @@
 module Glow.Ast.Common where
 
 import qualified Data.ByteString as BS
-import qualified Data.Text.Lazy as LT
 import Glow.Prelude
 
 -- | A variable
-newtype Var = Var LT.Text
+newtype Var = Var BS.ByteString
   deriving (Show, Read, Eq, Ord)
 
 data IntType = IntType
