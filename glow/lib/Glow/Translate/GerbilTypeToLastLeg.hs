@@ -17,7 +17,7 @@ translateType = \case
   TyName name -> translateTypeName name
   TyNameSubtype name _ -> translateTypeName name
   TyTuple elements -> GAL.TTuple (translateType <$> elements)
-  TyUnknown bs -> error ("Glow.Translate.GerbilTypeToLastLeg.translateType: unknown type " <> show bs)
+  t -> error ("Glow.Translate.GerbilTypeToLastLeg.translateType: unknown type " <> show t)
 
 -- TODO:
 -- - [ ] type:var

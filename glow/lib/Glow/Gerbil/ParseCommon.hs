@@ -40,6 +40,12 @@ parseType (List [Atom "type:name-subtype", List [Atom "quote", Atom name], typ])
   TyNameSubtype (BS8.pack name) (parseType typ)
 parseType (List [Atom "type:tuple", List (Atom "@list" : elts)]) =
   TyTuple (map parseType elts)
+parseType (List [Atom "type:var", List [Atom "quote", Atom name]]) =
+  TyVar (BS8.pack name)
+parseType (List [Atom "type:app", fun, List (Atom "@list" : args)]) =
+  TyApp (parseType fun) (parseType <$> args)
+parseType (List [Atom "type:record", List (Atom "symdict" : entries)]) =
+  TyRecord (Map.fromList [(BS8.pack k, parseType v) | List [Atom k, v] <- entries])
 parseType sexp =
   TyUnknown (BS8.pack $ show sexp)
 
