@@ -1,15 +1,9 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Glow.Ast.LiftedFunctions where
 
-import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as M
 import Glow.Ast.Common
 import Glow.Gerbil.Types (Type, Variant)
 import Glow.Prelude
-
-newtype Id = Id BS.ByteString
-  deriving (Show, Read, Eq, Ord, IsString)
 
 data Module = Module [TopStmt]
   deriving (Show, Read, Eq)
@@ -36,8 +30,8 @@ data InteractionDef = InteractionDef
 
 data BodyStmt
   = BsPartStmt (Maybe Id) PartStmt
-  | BsWithdraw Id (Record ArgExpr)
-  | BsDeposit Id (Record ArgExpr)
+  | BsWithdraw Id (Record TrivExpr)
+  | BsDeposit Id (Record TrivExpr)
   | BsPublish Id Id
   | BsSwitch (Switch BodyStmt)
   deriving (Show, Read, Eq)
@@ -48,31 +42,31 @@ data PartStmt
   | PsDef Id Expr
   | PsIgnore Expr
   | PsReturn Expr
-  | PsRequire ArgExpr
-  | PsAssert ArgExpr
+  | PsRequire TrivExpr
+  | PsAssert TrivExpr
   | PsSwitch (Switch PartStmt)
   deriving (Show, Read, Eq)
 
 data Switch stmt = Switch
-  { swArg :: ArgExpr,
+  { swArg :: TrivExpr,
     swBranches :: [(Pat, [stmt])]
   }
   deriving (Show, Read, Eq)
 
 data Expr
-  = ExArg ArgExpr
-  | ExDot ArgExpr Id
-  | ExList [ArgExpr]
-  | ExTuple [ArgExpr]
-  | ExRecord (Record ArgExpr)
+  = ExTriv TrivExpr
+  | ExDot TrivExpr Id
+  | ExList [TrivExpr]
+  | ExTuple [TrivExpr]
+  | ExRecord (Record TrivExpr)
   | -- | Probably obvious suggestion: maybe generalize this to other binary operators?
-    ExEq ArgExpr ArgExpr
-  | ExInput Type ArgExpr
+    ExEq TrivExpr TrivExpr
+  | ExInput Type TrivExpr
   | -- | Question: can digest actually take multiple arguments? What does that do?
-    ExDigest [ArgExpr]
-  | ExSign ArgExpr
-  | ExCapture ArgExpr [ArgExpr]
-  | ExApp ArgExpr [ArgExpr]
+    ExDigest [TrivExpr]
+  | ExSign TrivExpr
+  | ExCapture TrivExpr [TrivExpr]
+  | ExApp TrivExpr [TrivExpr]
   deriving (Show, Read, Eq)
 
 newtype Record val = Record (M.Map Id val)
@@ -84,12 +78,6 @@ data Lambda stmt = Lambda
     lamParams :: [Id],
     lamBody :: [stmt]
   }
-  deriving (Show, Read, Eq)
-
-data ArgExpr
-  = AEVar Id
-  | AEConst Constant
-  | AEEmptyTuple
   deriving (Show, Read, Eq)
 
 data Pat

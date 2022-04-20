@@ -41,7 +41,7 @@ liftTopStmt :: Maybe Id -> [ByteString] -> GGT.AnfStatement -> State UnusedTable
 -- when mpart is (Just p), must produce TsBodyStmt BsPartStmt (Just p)
 liftTopStmt mpart locals = \case
   -- cases for TopStmt
-  GGT.AtParticipant (GGT.Variable p) s ->
+  GGT.AtParticipant (TrexVar (Id p)) s ->
     (case mpart of
       Nothing -> liftTopStmt (Just (Id p)) locals s
       Just _ -> error ("@ at-participant not allowed, already within a participant"))
@@ -59,32 +59,30 @@ liftTopStmt mpart locals = \case
         f2 <- fresh f
         return (ts
                 <> [TsDefLambda mpart (Id f2) (Lambda (Id <$> cs) (Id <$> xs) bs2),
-                    TsBodyStmt (BsPartStmt mpart (PsDef (Id f) (ExCapture (AEVar (Id f2)) (AEVar . Id <$> cs))))]))
+                    TsBodyStmt (BsPartStmt mpart (PsDef (Id f) (ExCapture (TrexVar (Id f2)) (TrexVar . Id <$> cs))))]))
   GGT.DefineType f xs b -> return [TsDefType (Id f) (Id <$> xs) b]
   GGT.DefineDatatype f xs vs -> return [TsDefData (Id f) (Id <$> xs) vs]
   -- cases for BodyStmt
-  GGT.Publish (GGT.Variable p) xs -> return [TsBodyStmt (BsPublish (Id p) (Id x)) | GGT.Variable x <- xs]
-  GGT.Deposit (GGT.Variable p) am -> return [TsBodyStmt (BsDeposit (Id p) (translateAssetMap am))]
-  GGT.Withdraw (GGT.Variable p) am -> return [TsBodyStmt (BsWithdraw (Id p) (translateAssetMap am))]
+  GGT.Publish (TrexVar (Id p)) xs -> return [TsBodyStmt (BsPublish (Id p) (Id x)) | TrexVar (Id x) <- xs]
+  GGT.Deposit (TrexVar (Id p)) am -> return [TsBodyStmt (BsDeposit (Id p) (translateAssetMap am))]
+  GGT.Withdraw (TrexVar (Id p)) am -> return [TsBodyStmt (BsWithdraw (Id p) (translateAssetMap am))]
   GGT.Switch a cs -> 
     (case mpart of
       -- case for BsSwitch
       Nothing -> do
-        let a2 = translateArgExpr a
         (ts, cs2) <- liftSwitchCases mpart locals liftBodyStmts cs
-        return (ts <> [TsBodyStmt (BsSwitch (Switch a2 cs2))])
+        return (ts <> [TsBodyStmt (BsSwitch (Switch a cs2))])
       -- case for PsSwitch
       Just _ -> do
-        let a2 = translateArgExpr a
         (ts, cs2) <- liftSwitchCases mpart locals liftPartStmts cs
-        return (ts <> [TsBodyStmt (BsPartStmt mpart (PsSwitch (Switch a2 cs2)))]))
+        return (ts <> [TsBodyStmt (BsPartStmt mpart (PsSwitch (Switch a cs2)))]))
   -- cases for PartStmt
   GGT.Label bs -> return [TsBodyStmt (BsPartStmt mpart (PsLabel (Id bs)))]
   GGT.DebugLabel _ -> return []
   GGT.SetParticipant _ -> return []
   GGT.Define x e -> return [TsBodyStmt (BsPartStmt mpart (PsDef (Id x) (translateExpr e)))]
   GGT.Ignore e -> return [TsBodyStmt (BsPartStmt mpart (PsIgnore (translateExpr e)))]
-  GGT.Require a -> return [TsBodyStmt (BsPartStmt mpart (PsRequire (translateArgExpr a)))]
+  GGT.Require a -> return [TsBodyStmt (BsPartStmt mpart (PsRequire a))]
   GGT.Return e -> return [TsBodyStmt (BsPartStmt mpart (PsReturn (translateExpr e)))]
   s -> error ("Glow.Translate.FunctionLift.liftTopStmt: unexpected statement" <> show s)
 
@@ -123,41 +121,25 @@ liftSwitchCase mpart locals liftStmts (pat, stmts) = do
 
 translateExpr :: GGT.Expression -> Expr
 translateExpr = \case
-  GGT.Digest as -> ExDigest (translateArgExpr <$> as)
-  GGT.Sign a -> ExSign (translateArgExpr a)
-  GGT.Input t a -> ExInput t (translateArgExpr a)
-  GGT.EqlExpr a b -> ExEq (translateArgExpr a) (translateArgExpr b)
-  GGT.AppExpr f as -> ExApp (translateArgExpr f) (translateArgExpr <$> as)
-  GGT.TrvExpr a -> ExArg (translateArgExpr a)
+  GGT.Digest as -> ExDigest as
+  GGT.Sign a -> ExSign a
+  GGT.Input t a -> ExInput t a
+  GGT.EqlExpr a b -> ExEq a b
+  GGT.AppExpr f as -> ExApp f as
+  GGT.TrvExpr a -> ExTriv a
   e@(GGT.ExpectPublished _) ->
     error ("Glow.Translate.FunctionLift.translateExpr: bad ExpectPublished expression in ANF input: " <> show e <> "\n"
            <> "  expected Publish statements instead")
 
-translateArgExpr :: GGT.GlowValueRef -> ArgExpr
-translateArgExpr = \case
-  GGT.Explicit GGT.Unit -> AEEmptyTuple
-  GGT.Explicit v -> AEConst (translateConst v)
-  GGT.Variable x -> AEVar (Id x)
-
-translateConst :: GGT.GlowValue -> Constant
-translateConst = \case
-  GGT.Integer i -> CInt (intType i) i
-  GGT.Boolean b -> CBool b
-  GGT.ByteString s -> CByteString s
-  v -> error ("TODO: resolve mismatch between GGT.GlowValue and Constant,\n"
-              <> "  by restricting GGT.GlowValue and/or expanding Constant,\n"
-              <> "  or merging them into a single common type.\n"
-              <> "  at: " <> show v)
-
-translateAssetMap :: GGT.AssetMap -> (Record ArgExpr)
-translateAssetMap am = Record (Map.mapKeys Id (Map.map translateArgExpr am))
+translateAssetMap :: GGT.AssetMap -> (Record TrivExpr)
+translateAssetMap am = Record (Map.mapKeys Id am)
 
 translatePat :: GGT.Pattern -> Pat
 -- TODO: expand GGT.Pattern to express more patterns that Pat can express,
 --       or merge them into a single common type
 translatePat = \case
   GGT.VarPat x -> PVar (Id x)
-  GGT.ValPat v -> PConst (translateConst v)
+  GGT.ValPat v -> PConst v
 
 ----------
 
@@ -203,10 +185,10 @@ usedVarsExpr = \case
   GGT.AppExpr f as -> usedVarsGVR f `union` unionMap usedVarsGVR as
   GGT.TrvExpr a -> usedVarsGVR a
 
-usedVarsGVR :: GGT.GlowValueRef -> [ByteString]
+usedVarsGVR :: TrivExpr -> [ByteString]
 usedVarsGVR = \case
-  GGT.Variable x -> [x]
-  GGT.Explicit _ -> []
+  TrexVar (Id x) -> [x]
+  TrexConst _ -> []
 
 usedVarsAM :: GGT.AssetMap -> [ByteString]
 usedVarsAM = unionMap usedVarsGVR . Map.elems

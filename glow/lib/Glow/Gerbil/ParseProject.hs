@@ -21,6 +21,7 @@ import qualified Data.ByteString.Char8 as BS8
 import Data.Either (fromRight)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Glow.Ast.Common (Constant(..), TrivExpr(..))
 import Glow.Gerbil.Client.Types
   ( CreateParams (..),
     MoveParams (..),
@@ -186,7 +187,7 @@ parseStatement = \case
   Builtin "expect-withdrawn" [Atom roleName, Builtin "@record" amounts] ->
     Withdraw (var roleName) (parseAssetMap amounts)
   Builtin "add-to-publish" _ ->
-    Require $ Explicit (Boolean True)
+    Require $ TrexConst (CBool True)
   Builtin "add-to-deposit" [Builtin "@record" amounts] ->
     Deposit (var "ACTIVE") (parseAssetMap amounts)
   Builtin "consensus:withdraw" [Atom roleName, Builtin "@record" amounts] ->
@@ -313,7 +314,7 @@ extractPrograms statements =
       stmt ->
         addStatement stmt
 
-    setParticipant :: GlowValueRef -> State (Maybe GlowValueRef, ExecutionPoint, Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)) ()
+    setParticipant :: TrivExpr -> State (Maybe TrivExpr, ExecutionPoint, Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)) ()
     setParticipant newParticipant =
       modify $ \cur@(curParticipant, curLabel, contract) ->
         if curParticipant == Just newParticipant
@@ -334,7 +335,7 @@ extractPrograms statements =
             Nothing ->
               (Just newParticipant, curLabel, contract & Map.insert curLabel ([SetParticipant newParticipant], Nothing))
 
-    addStatement :: ProjectStatement -> State (Maybe GlowValueRef, ExecutionPoint, Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)) ()
+    addStatement :: ProjectStatement -> State (Maybe TrivExpr, ExecutionPoint, Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)) ()
     addStatement stmt =
       modify $ \(curParticipant, curLabel, contract) ->
         let newContract = case Map.lookup curLabel contract of

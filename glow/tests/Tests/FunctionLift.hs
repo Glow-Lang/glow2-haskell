@@ -14,83 +14,83 @@ tests = describe "Glow.Translate.FunctionLift" $ do
   it ("Should translate trivial statements") $ do
     evalState
       (liftTopStmt Nothing []
-        (GGT.Define "x" (GGT.TrvExpr (GGT.Explicit (GGT.Integer 3)))))
+        (GGT.Define "x" (GGT.TrvExpr (TrexConst (cInteger 3)))))
       Map.empty
     `shouldBe`
-      [TsBodyStmt (BsPartStmt Nothing (PsDef "x" (ExArg (AEConst (cInteger 3)))))]
+      [TsBodyStmt (BsPartStmt Nothing (PsDef "x" (ExTriv (TrexConst (cInteger 3)))))]
   it ("Should lift already-closed functions to the top without adding capture parameters") $ do
     evalState
       (liftTopStmt Nothing []
         (GGT.DefineFunction "sumsqr" ["a", "b"]
-          [GGT.DefineFunction "sqr" ["x"] [GGT.Return (GGT.AppExpr (GGT.Variable "*") [GGT.Variable "x", GGT.Variable "x"])],
-           GGT.Define "tmp" (GGT.AppExpr (GGT.Variable "sqr") [GGT.Variable "a"]),
-           GGT.Define "tmp0" (GGT.AppExpr (GGT.Variable "sqr") [GGT.Variable "b"]),
-           GGT.Return (GGT.AppExpr (GGT.Variable "+") [GGT.Variable "tmp", GGT.Variable "tmp0"])]))
+          [GGT.DefineFunction "sqr" ["x"] [GGT.Return (GGT.AppExpr (TrexVar "*") [TrexVar "x", TrexVar "x"])],
+           GGT.Define "tmp" (GGT.AppExpr (TrexVar "sqr") [TrexVar "a"]),
+           GGT.Define "tmp0" (GGT.AppExpr (TrexVar "sqr") [TrexVar "b"]),
+           GGT.Return (GGT.AppExpr (TrexVar "+") [TrexVar "tmp", TrexVar "tmp0"])]))
       Map.empty
     `shouldBe`
-      [TsDefLambda Nothing "sqr" (Lambda [] ["x"] [BsPartStmt Nothing (PsReturn (ExApp (AEVar "*") [AEVar "x", AEVar "x"]))]),
+      [TsDefLambda Nothing "sqr" (Lambda [] ["x"] [BsPartStmt Nothing (PsReturn (ExApp (TrexVar "*") [TrexVar "x", TrexVar "x"]))]),
        TsDefLambda Nothing "sumsqr" (Lambda [] ["a", "b"]
-         [BsPartStmt Nothing (PsDef "tmp" (ExApp (AEVar "sqr") [AEVar "a"])),
-          BsPartStmt Nothing (PsDef "tmp0" (ExApp (AEVar "sqr") [AEVar "b"])),
-          BsPartStmt Nothing (PsReturn (ExApp (AEVar "+") [AEVar "tmp", AEVar "tmp0"]))])]
+         [BsPartStmt Nothing (PsDef "tmp" (ExApp (TrexVar "sqr") [TrexVar "a"])),
+          BsPartStmt Nothing (PsDef "tmp0" (ExApp (TrexVar "sqr") [TrexVar "b"])),
+          BsPartStmt Nothing (PsReturn (ExApp (TrexVar "+") [TrexVar "tmp", TrexVar "tmp0"]))])]
   it ("Should lift closures with their capture parameters") $ do
     evalState
       (liftTopStmt Nothing []
         (GGT.DefineFunction "adder" ["x"]
-          [GGT.DefineFunction "add-x" ["y"] [GGT.Return (GGT.AppExpr (GGT.Variable "+") [GGT.Variable "x", GGT.Variable "y"])],
-           GGT.Return (GGT.TrvExpr (GGT.Variable "add-x"))]))
+          [GGT.DefineFunction "add-x" ["y"] [GGT.Return (GGT.AppExpr (TrexVar "+") [TrexVar "x", TrexVar "y"])],
+           GGT.Return (GGT.TrvExpr (TrexVar "add-x"))]))
       (execState (mapM fresh ["adder", "x", "add-x", "y", "+"]) Map.empty)
     `shouldBe`
-      [TsDefLambda Nothing "add-x0" (Lambda ["x"] ["y"] [BsPartStmt Nothing (PsReturn (ExApp (AEVar "+") [AEVar "x", AEVar "y"]))]),
+      [TsDefLambda Nothing "add-x0" (Lambda ["x"] ["y"] [BsPartStmt Nothing (PsReturn (ExApp (TrexVar "+") [TrexVar "x", TrexVar "y"]))]),
        TsDefLambda Nothing "adder" (Lambda [] ["x"]
-         [BsPartStmt Nothing (PsDef "add-x" (ExCapture (AEVar "add-x0") [AEVar "x"])),
-          BsPartStmt Nothing (PsReturn (ExArg (AEVar "add-x")))])]
+         [BsPartStmt Nothing (PsDef "add-x" (ExCapture (TrexVar "add-x0") [TrexVar "x"])),
+          BsPartStmt Nothing (PsReturn (ExTriv (TrexVar "add-x")))])]
   it ("Should pass on asset_swap.glow") $ do
     evalState
       (liftTopStmt Nothing []
         (GGT.DefineInteraction
           "swap"
           (GGT.AnfInteractionDef ["A", "B"] ["T", "U"] ["t", "u"]
-            [GGT.Deposit (GGT.Variable "A") (Map.fromList [ ( "T" , GGT.Variable "t" ) ]),
+            [GGT.Deposit (TrexVar "A") (Map.fromList [ ( "T" , TrexVar "t" ) ]),
              GGT.DebugLabel "dlb1",
-             GGT.Deposit (GGT.Variable "B") (Map.fromList [ ( "U" , GGT.Variable "u" ) ]),
+             GGT.Deposit (TrexVar "B") (Map.fromList [ ( "U" , TrexVar "u" ) ]),
              GGT.DebugLabel "dlb2",
-             GGT.Withdraw (GGT.Variable "B") (Map.fromList [ ( "T" , GGT.Variable "t" ) ]),
+             GGT.Withdraw (TrexVar "B") (Map.fromList [ ( "T" , TrexVar "t" ) ]),
              GGT.DebugLabel "dlb3",
-             GGT.Withdraw (GGT.Variable "A") (Map.fromList [ ( "U" , GGT.Variable "u" ) ]),
-             GGT.Return (GGT.TrvExpr (GGT.Explicit GGT.Unit))])))
+             GGT.Withdraw (TrexVar "A") (Map.fromList [ ( "U" , TrexVar "u" ) ]),
+             GGT.Return (GGT.TrvExpr (TrexConst CUnit))])))
       (execState (mapM fresh ["swap", "A", "B", "T", "U", "t", "u", "dlb1", "dlb2", "dlb3"]) Map.empty)
     `shouldBe`
       [TsDefInteraction "swap"
         (InteractionDef ["A", "B"] ["T", "U"] ["t", "u"]
-          [BsDeposit "A" (Record (Map.fromList [("T", AEVar "t")])),
-           BsDeposit "B" (Record (Map.fromList [("U", AEVar "u")])),
-           BsWithdraw "B" (Record (Map.fromList [("T", AEVar "t")])),
-           BsWithdraw "A" (Record (Map.fromList [("U", AEVar "u")])),
-           BsPartStmt Nothing (PsReturn (ExArg AEEmptyTuple))])]
+          [BsDeposit "A" (Record (Map.fromList [("T", TrexVar "t")])),
+           BsDeposit "B" (Record (Map.fromList [("U", TrexVar "u")])),
+           BsWithdraw "B" (Record (Map.fromList [("T", TrexVar "t")])),
+           BsWithdraw "A" (Record (Map.fromList [("U", TrexVar "u")])),
+           BsPartStmt Nothing (PsReturn (ExTriv (TrexConst CUnit)))])]
   it ("Should pass on buy_sig") $ do
     evalState
       (liftTopStmt Nothing []
         (GGT.DefineInteraction "buySig"
           (GGT.AnfInteractionDef ["Buyer", "Seller"] ["DefaultToken"] ["digest0", "price"]
-            [GGT.Deposit (GGT.Variable "Buyer") (Map.fromList [ ( "DefaultToken" , GGT.Variable "price" ) ]),
+            [GGT.Deposit (TrexVar "Buyer") (Map.fromList [ ( "DefaultToken" , TrexVar "price" ) ]),
              GGT.DebugLabel "dlb1",
-             GGT.AtParticipant (GGT.Variable "Seller")
-               (GGT.Define "signature" (GGT.Sign (GGT.Variable "digest0"))),
-             GGT.Publish (GGT.Variable "Seller") [GGT.Variable "signature"],
-             GGT.Define "tmp" (GGT.AppExpr (GGT.Variable "isValidSignature") [GGT.Variable "Seller", GGT.Variable "digest0", GGT.Variable "signature"]),
-             GGT.Require (GGT.Variable "tmp"),
+             GGT.AtParticipant (TrexVar "Seller")
+               (GGT.Define "signature" (GGT.Sign (TrexVar "digest0"))),
+             GGT.Publish (TrexVar "Seller") [TrexVar "signature"],
+             GGT.Define "tmp" (GGT.AppExpr (TrexVar "isValidSignature") [TrexVar "Seller", TrexVar "digest0", TrexVar "signature"]),
+             GGT.Require (TrexVar "tmp"),
              GGT.DebugLabel "dlb2",
-             GGT.Withdraw (GGT.Variable "Seller") (Map.fromList [ ( "DefaultToken" , GGT.Variable "price" ) ]),
-             GGT.Return (GGT.TrvExpr (GGT.Explicit GGT.Unit))])))
+             GGT.Withdraw (TrexVar "Seller") (Map.fromList [ ( "DefaultToken" , TrexVar "price" ) ]),
+             GGT.Return (GGT.TrvExpr (TrexConst CUnit))])))
       (execState (mapM fresh ["buySig", "Buyer", "Seller", "DefaultToken", "digest0", "price", "dlb1", "signature", "tmp", "isValidSignature", "dlb2"]) Map.empty)
     `shouldBe`
       [TsDefInteraction "buySig"
         (InteractionDef ["Buyer", "Seller"] ["DefaultToken"] ["digest0", "price"]
-          [BsDeposit "Buyer" (Record (Map.fromList [("DefaultToken", AEVar "price")])),
-           BsPartStmt (Just "Seller") (PsDef "signature" (ExSign (AEVar "digest0"))),
+          [BsDeposit "Buyer" (Record (Map.fromList [("DefaultToken", TrexVar "price")])),
+           BsPartStmt (Just "Seller") (PsDef "signature" (ExSign (TrexVar "digest0"))),
            BsPublish "Seller" "signature",
-           BsPartStmt Nothing (PsDef "tmp" (ExApp (AEVar "isValidSignature") [AEVar "Seller", AEVar "digest0", AEVar "signature"])),
-           BsPartStmt Nothing (PsRequire (AEVar "tmp")),
-           BsWithdraw "Seller" (Record (Map.fromList [("DefaultToken", AEVar "price")])),
-           BsPartStmt Nothing (PsReturn (ExArg AEEmptyTuple))])]
+           BsPartStmt Nothing (PsDef "tmp" (ExApp (TrexVar "isValidSignature") [TrexVar "Seller", TrexVar "digest0", TrexVar "signature"])),
+           BsPartStmt Nothing (PsRequire (TrexVar "tmp")),
+           BsWithdraw "Seller" (Record (Map.fromList [("DefaultToken", TrexVar "price")])),
+           BsPartStmt Nothing (PsReturn (ExTriv (TrexConst CUnit)))])]

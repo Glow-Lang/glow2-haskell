@@ -7,6 +7,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS8
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Glow.Ast.Common (Id(..), Constant(..), TrivExpr(..), cInteger)
 import Glow.Gerbil.Types as Glow
 import Glow.Prelude
 import Text.SExpression as SExpr
@@ -84,8 +85,8 @@ parseExpression = \case
   unknown ->
     error $ "Unknown expression in contract body: " <> show unknown
 
-var :: String -> GlowValueRef
-var = Variable . BS8.pack
+var :: String -> TrivExpr
+var = TrexVar . Id . BS8.pack
 
 parseName :: SExpr -> String
 parseName = \case
@@ -96,17 +97,18 @@ parseName = \case
   unknown ->
     error $ "Invalid name expression: " <> show unknown
 
-parseTrivialExpression :: SExpr -> GlowValueRef
+parseTrivialExpression :: SExpr -> TrivExpr
 parseTrivialExpression = \case
   Atom name -> var name
-  List [Atom "@tuple"] -> Explicit Unit
-  Number n -> Explicit (Integer n)
-  String s -> Explicit (ByteString (BS8.pack s))
+  List [Atom "@tuple"] -> TrexConst CUnit
+  Bool b -> TrexConst (CBool b)
+  Number n -> TrexConst (cInteger n)
+  String s -> TrexConst (CByteString (BS8.pack s))
   unknown ->
     error $ "Unknown expression in trivial-expression position: " <> show unknown
 
 parsePattern :: SExpr -> Pattern
 parsePattern = \case
-  Bool b -> ValPat (Boolean b)
-  Number n -> ValPat (Integer n)
+  Bool b -> ValPat (CBool b)
+  Number n -> ValPat (cInteger n)
   unknown -> error $ "Unknown switch pattern: " <> show unknown

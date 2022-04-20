@@ -8,6 +8,7 @@ module Glow.Gerbil.Types where
 import Data.ByteString (ByteString)
 import qualified Data.Map.Strict as M
 import GHC.Generics hiding (Datatype)
+import Glow.Ast.Common (Constant, TrivExpr)
 import Glow.Prelude
 
 -- TODO: variable cleanup, only keep live variables between each transaction
@@ -19,7 +20,7 @@ type ProjectFunctionMap = M.Map ByteString (ByteString, [ProjectStatement])
 
 type DatatypeMap = M.Map ByteString [(ByteString, Integer)]
 
-type AssetMap = M.Map ByteString GlowValueRef
+type AssetMap = M.Map ByteString TrivExpr
 
 type ProjectFunction = (ByteString, [ProjectStatement])
 
@@ -52,15 +53,15 @@ data Statement interactionDef
     -- first variant has an empty list (likewise for defdata).
     DefineType ByteString [ByteString] Type
   | DefineDatatype ByteString [ByteString] [Variant]
-  | AtParticipant GlowValueRef (Statement interactionDef)
-  | SetParticipant GlowValueRef
-  | Publish GlowValueRef [GlowValueRef]
-  | Deposit GlowValueRef AssetMap
-  | Withdraw GlowValueRef AssetMap
+  | AtParticipant TrivExpr (Statement interactionDef)
+  | SetParticipant TrivExpr
+  | Publish TrivExpr [TrivExpr]
+  | Deposit TrivExpr AssetMap
+  | Withdraw TrivExpr AssetMap
   | Ignore Expression
-  | Require GlowValueRef
+  | Require TrivExpr
   | Return Expression
-  | Switch GlowValueRef [(Pattern, [(Statement interactionDef)])]
+  | Switch TrivExpr [(Pattern, [(Statement interactionDef)])]
   deriving stock (Generic, Eq, Show)
 
 data AnfInteractionDef = AnfInteractionDef
@@ -88,18 +89,12 @@ data Variant = Variant ByteString [Type]
 
 data Expression
   = ExpectPublished ByteString
-  | Digest [GlowValueRef]
-  | Sign GlowValueRef
-  | Input Type GlowValueRef
-  | EqlExpr GlowValueRef GlowValueRef
-  | AppExpr GlowValueRef [GlowValueRef]
-  | TrvExpr GlowValueRef
-  deriving stock (Generic, Eq, Show)
-
--- TODO: how to encode expected type?
-data GlowValueRef
-  = Explicit GlowValue
-  | Variable ByteString
+  | Digest [TrivExpr]
+  | Sign TrivExpr
+  | Input Type TrivExpr
+  | EqlExpr TrivExpr TrivExpr
+  | AppExpr TrivExpr [TrivExpr]
+  | TrvExpr TrivExpr
   deriving stock (Generic, Eq, Show)
 
 data GlowValue
@@ -114,7 +109,7 @@ data GlowValue
 
 data Pattern
   = VarPat ByteString
-  | ValPat GlowValue
+  | ValPat Constant
   deriving stock (Generic, Eq, Show)
 
 newtype LedgerPubKey = LedgerPubKey ByteString
