@@ -63,10 +63,10 @@ tests = describe "Glow.Translate.FunctionLift" $ do
     `shouldBe`
       [TsDefInteraction "swap"
         (InteractionDef ["A", "B"] ["T", "U"] ["t", "u"]
-          [BsDeposit "A" (Record (Map.fromList [("T", TrexVar "t")])),
-           BsDeposit "B" (Record (Map.fromList [("U", TrexVar "u")])),
-           BsWithdraw "B" (Record (Map.fromList [("T", TrexVar "t")])),
-           BsWithdraw "A" (Record (Map.fromList [("U", TrexVar "u")])),
+          [BsDeposit "A" (Map.fromList [("T", TrexVar "t")]),
+           BsDeposit "B" (Map.fromList [("U", TrexVar "u")]),
+           BsWithdraw "B" (Map.fromList [("T", TrexVar "t")]),
+           BsWithdraw "A" (Map.fromList [("U", TrexVar "u")]),
            BsPartStmt Nothing (PsReturn (ExTriv (TrexConst CUnit)))])]
   it ("Should pass on buy_sig") $ do
     evalState
@@ -87,10 +87,10 @@ tests = describe "Glow.Translate.FunctionLift" $ do
     `shouldBe`
       [TsDefInteraction "buySig"
         (InteractionDef ["Buyer", "Seller"] ["DefaultToken"] ["digest0", "price"]
-          [BsDeposit "Buyer" (Record (Map.fromList [("DefaultToken", TrexVar "price")])),
+          [BsDeposit "Buyer" (Map.fromList [("DefaultToken", TrexVar "price")]),
            BsPartStmt (Just "Seller") (PsDef "signature" (ExSign (TrexVar "digest0"))),
            BsPublish "Seller" "signature",
            BsPartStmt Nothing (PsDef "tmp" (ExApp (TrexVar "isValidSignature") [TrexVar "Seller", TrexVar "digest0", TrexVar "signature"])),
            BsPartStmt Nothing (PsRequire (TrexVar "tmp")),
-           BsWithdraw "Seller" (Record (Map.fromList [("DefaultToken", TrexVar "price")])),
+           BsWithdraw "Seller" (Map.fromList [("DefaultToken", TrexVar "price")]),
            BsPartStmt Nothing (PsReturn (ExTriv (TrexConst CUnit)))])]

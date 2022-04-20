@@ -40,17 +40,17 @@ parseType :: SExpr -> Type
 parseType (List [Atom "type:arrow", List (Atom "@list" : params), result]) =
   TyArrow (map parseType params) (parseType result)
 parseType (List [Atom "type:name", List [Atom "quote", Atom name]]) =
-  TyName (BS8.pack name)
+  TyName (Id (BS8.pack name))
 parseType (List [Atom "type:name-subtype", List [Atom "quote", Atom name], typ]) =
-  TyNameSubtype (BS8.pack name) (parseType typ)
+  TyNameSubtype (Id (BS8.pack name)) (parseType typ)
 parseType (List [Atom "type:tuple", List (Atom "@list" : elts)]) =
   TyTuple (map parseType elts)
 parseType (List [Atom "type:var", List [Atom "quote", Atom name]]) =
-  TyVar (BS8.pack name)
+  TyVar (Id (BS8.pack name))
 parseType (List [Atom "type:app", fun, List (Atom "@list" : args)]) =
   TyApp (parseType fun) (parseType <$> args)
 parseType (List [Atom "type:record", List (Atom "symdict" : entries)]) =
-  TyRecord (Map.fromList [(BS8.pack k, parseType v) | List [Atom k, v] <- entries])
+  TyRecord (Map.fromList [(Id (BS8.pack k), parseType v) | List [Atom k, v] <- entries])
 parseType sexp =
   TyUnknown (BS8.pack $ show sexp)
 
@@ -61,7 +61,7 @@ parseVariant sexp = error $ "parseVariant: S-expression is not a datatype varian
 parseAssetMap :: [SExpr] -> AssetMap
 parseAssetMap = Map.fromList . map parseField
   where
-    parseField (Builtin name [Atom amountName]) = (BS8.pack name, var amountName)
+    parseField (Builtin name [Atom amountName]) = (Id (BS8.pack name), var amountName)
     parseField field = error $ "Malformed field in asset map: " <> show field
 
 parseExpression :: SExpr -> Expression
@@ -107,8 +107,8 @@ parseTrivialExpression = \case
   unknown ->
     error $ "Unknown expression in trivial-expression position: " <> show unknown
 
-parsePattern :: SExpr -> Pattern
+parsePattern :: SExpr -> Glow.Pat
 parsePattern = \case
-  Bool b -> ValPat (CBool b)
-  Number n -> ValPat (cInteger n)
+  Bool b -> PConst (CBool b)
+  Number n -> PConst (cInteger n)
   unknown -> error $ "Unknown switch pattern: " <> show unknown

@@ -11,6 +11,7 @@ import qualified Data.Map.Strict as Map
 import Glow.Ast.Common
 import Glow.Ast.LiftedFunctions
 import Glow.Gerbil.Fresh
+import Glow.Gerbil.Types (Pat(..))
 import qualified Glow.Gerbil.Types as GGT
 import Glow.Prelude
 
@@ -64,8 +65,8 @@ liftTopStmt mpart locals = \case
   GGT.DefineDatatype f xs vs -> return [TsDefData (Id f) (Id <$> xs) vs]
   -- cases for BodyStmt
   GGT.Publish (TrexVar (Id p)) xs -> return [TsBodyStmt (BsPublish (Id p) (Id x)) | TrexVar (Id x) <- xs]
-  GGT.Deposit (TrexVar (Id p)) am -> return [TsBodyStmt (BsDeposit (Id p) (translateAssetMap am))]
-  GGT.Withdraw (TrexVar (Id p)) am -> return [TsBodyStmt (BsWithdraw (Id p) (translateAssetMap am))]
+  GGT.Deposit (TrexVar (Id p)) am -> return [TsBodyStmt (BsDeposit (Id p) am)]
+  GGT.Withdraw (TrexVar (Id p)) am -> return [TsBodyStmt (BsWithdraw (Id p) am)]
   GGT.Switch a cs -> 
     (case mpart of
       -- case for BsSwitch
@@ -107,15 +108,15 @@ liftPartStmts mpart locals stmts = do
   (ts, bs) <- liftBodyStmts mpart locals stmts
   return (ts, [ps | BsPartStmt _ ps <- bs])
 
-liftSwitchCases :: Maybe Id -> [ByteString] -> (Maybe Id -> [ByteString] -> [GGT.AnfStatement] -> LiftState [stmt]) -> [(GGT.Pattern, [GGT.AnfStatement])] -> LiftState [(Pat, [stmt])]
+liftSwitchCases :: Maybe Id -> [ByteString] -> (Maybe Id -> [ByteString] -> [GGT.AnfStatement] -> LiftState [stmt]) -> [(Pat, [GGT.AnfStatement])] -> LiftState [(Pat, [stmt])]
 liftSwitchCases mpart locals liftStmts cs = do
   tcs2 <- mapM (liftSwitchCase mpart locals liftStmts) cs
   return (concatMap fst tcs2, map snd tcs2)
 
-liftSwitchCase :: Maybe Id -> [ByteString] -> (Maybe Id -> [ByteString] -> [GGT.AnfStatement] -> LiftState [stmt]) -> (GGT.Pattern, [GGT.AnfStatement]) -> LiftState (Pat, [stmt])
+liftSwitchCase :: Maybe Id -> [ByteString] -> (Maybe Id -> [ByteString] -> [GGT.AnfStatement] -> LiftState [stmt]) -> (Pat, [GGT.AnfStatement]) -> LiftState (Pat, [stmt])
 liftSwitchCase mpart locals liftStmts (pat, stmts) = do
   (ts, bs) <- liftStmts mpart (locals `union` patVars pat) stmts
-  return (ts, ((translatePat pat), bs))
+  return (ts, (pat, bs))
 
 ----------
 
@@ -130,16 +131,6 @@ translateExpr = \case
   e@(GGT.ExpectPublished _) ->
     error ("Glow.Translate.FunctionLift.translateExpr: bad ExpectPublished expression in ANF input: " <> show e <> "\n"
            <> "  expected Publish statements instead")
-
-translateAssetMap :: GGT.AssetMap -> (Record TrivExpr)
-translateAssetMap am = Record (Map.mapKeys Id am)
-
-translatePat :: GGT.Pattern -> Pat
--- TODO: expand GGT.Pattern to express more patterns that Pat can express,
---       or merge them into a single common type
-translatePat = \case
-  GGT.VarPat x -> PVar (Id x)
-  GGT.ValPat v -> PConst v
 
 ----------
 
@@ -196,7 +187,14 @@ usedVarsAM = unionMap usedVarsGVR . Map.elems
 unionMap :: Eq b => (a -> [b]) -> [a] -> [b]
 unionMap f as = foldr union [] (map f as)
 
-patVars :: GGT.Pattern -> [ByteString]
+patVars :: Pat -> [ByteString]
 patVars = \case
-  GGT.VarPat x -> [x]
-  GGT.ValPat _ -> []
+  PVar (Id x) -> [x]
+  PTypeAnno p _ -> patVars p
+  PAppCtor _ ps -> unionMap patVars ps
+  PList ps -> unionMap patVars ps
+  PTuple ps -> unionMap patVars ps
+  POr ps -> unionMap patVars ps
+  PRecord m -> unionMap patVars (Map.elems m)
+  PWild -> []
+  PConst _ -> []

@@ -8,7 +8,7 @@ module Glow.Gerbil.Types where
 import Data.ByteString (ByteString)
 import qualified Data.Map.Strict as M
 import GHC.Generics hiding (Datatype)
-import Glow.Ast.Common (Constant, TrivExpr)
+import Glow.Ast.Common (Id, Constant, TrivExpr)
 import Glow.Prelude
 
 -- TODO: variable cleanup, only keep live variables between each transaction
@@ -20,21 +20,23 @@ type ProjectFunctionMap = M.Map ByteString (ByteString, [ProjectStatement])
 
 type DatatypeMap = M.Map ByteString [(ByteString, Integer)]
 
-type AssetMap = M.Map ByteString TrivExpr
+type AssetMap = Record TrivExpr
 
 type ProjectFunction = (ByteString, [ProjectStatement])
 
 type ExecutionPoint = ByteString
 
+type Record val = M.Map Id val
+
 -- | An MLsub type, as emitted by the frontend.
 data Type
   = TyArrow [Type] Type
-  | TyName ByteString
-  | TyNameSubtype ByteString Type
+  | TyName Id
+  | TyNameSubtype Id Type
   | TyTuple [Type]
-  | TyVar ByteString
+  | TyVar Id
   | TyApp Type [Type]
-  | TyRecord (M.Map ByteString Type)
+  | TyRecord (Record Type)
   | -- | TyUnknown is a placeholder until we actually support parsing everything;
     -- it is convienient to be able print out a larger type which has un-parsable
     -- bits, so we can see what of a program we handle and what we don't.
@@ -61,7 +63,7 @@ data Statement interactionDef
   | Ignore Expression
   | Require TrivExpr
   | Return Expression
-  | Switch TrivExpr [(Pattern, [(Statement interactionDef)])]
+  | Switch TrivExpr [(Pat, [(Statement interactionDef)])]
   deriving stock (Generic, Eq, Show)
 
 data AnfInteractionDef = AnfInteractionDef
@@ -107,10 +109,17 @@ data GlowValue
   | Unit
   deriving stock (Generic, Eq, Show)
 
-data Pattern
-  = VarPat ByteString
-  | ValPat Constant
-  deriving stock (Generic, Eq, Show)
+data Pat
+  = PTypeAnno Pat Type
+  | PVar Id
+  | PAppCtor Id [Pat]
+  | PWild
+  | PList [Pat]
+  | PTuple [Pat]
+  | PRecord (Record Pat)
+  | POr [Pat]
+  | PConst Constant
+  deriving (Show, Read, Eq)
 
 newtype LedgerPubKey = LedgerPubKey ByteString
   deriving stock (Generic, Eq, Show)

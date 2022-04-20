@@ -1,8 +1,7 @@
 module Glow.Ast.LiftedFunctions where
 
-import qualified Data.Map.Strict as M
 import Glow.Ast.Common
-import Glow.Gerbil.Types (Type, Variant)
+import Glow.Gerbil.Types (Record, Type, Variant, Pat)
 import Glow.Prelude
 
 data Module = Module [TopStmt]
@@ -69,9 +68,6 @@ data Expr
   | ExApp TrivExpr [TrivExpr]
   deriving (Show, Read, Eq)
 
-newtype Record val = Record (M.Map Id val)
-  deriving (Show, Read, Eq)
-
 data Lambda stmt = Lambda
   { lamCaptures :: [Id],
     -- | N.B. this representation allows nullary functions; is that what we intend?
@@ -80,14 +76,3 @@ data Lambda stmt = Lambda
   }
   deriving (Show, Read, Eq)
 
-data Pat
-  = PTypeAnno Pat Type
-  | PVar Id
-  | PAppCtor Id [Pat]
-  | PWild
-  | PList [Pat]
-  | PTuple [Pat]
-  | PRecord (Record Pat)
-  | POr [Pat]
-  | PConst Constant
-  deriving (Show, Read, Eq)

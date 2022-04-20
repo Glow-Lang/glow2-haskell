@@ -85,7 +85,7 @@ parseStatement = \case
   unknown ->
     error $ "Unknown statement in contract body: " <> show unknown
 
-parseSwitchCase :: SExpr -> (Pattern, [AnfStatement])
+parseSwitchCase :: SExpr -> (Pat, [AnfStatement])
 parseSwitchCase = \case
   List (pat : body) -> (parsePattern pat, parseStatement <$> body)
   unknown -> error $ "expected a pattern and body in a switch case: " <> show unknown
