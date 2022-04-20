@@ -25,14 +25,14 @@ parseStatement = \case
     Label $ BS8.pack name
   Builtin "@debug-label" [Atom name] ->
     DebugLabel $ BS8.pack name
-  Builtin "deftype" [Atom _name, _typeDefinition] ->
-    error "monomorphic type not supported"
-  Builtin "deftype" [List (Atom _name : _typeVariables), _typeDefinition] ->
-    error "polymorphic type not supported"
-  Builtin "defdata" [Atom _name, _datatypeDefinition] ->
-    error "monomorphic datatype not supported"
-  Builtin "defdata" [List (Atom _name : _typeVariables), _datatypeDefinition] ->
-    error "polymorphic datatype not supported"
+  Builtin "deftype" [Atom name, typeDefinition] ->
+    DefineType (BS8.pack name) [] (parseType typeDefinition)
+  Builtin "deftype" [List (Atom name : typeVariables), typeDefinition] ->
+    DefineType (BS8.pack name) (parseQuoteName <$> typeVariables) (parseType typeDefinition)
+  Builtin "defdata" (Atom name : variants) ->
+    DefineDatatype (BS8.pack name) [] (parseVariant <$> variants)
+  Builtin "defdata" (List (Atom name : typeVariables) : variants) ->
+    DefineDatatype (BS8.pack name) (parseQuoteName <$> typeVariables) (parseVariant <$> variants)
   Builtin
     "def"
     [ Atom contractName,

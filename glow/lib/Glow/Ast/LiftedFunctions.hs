@@ -5,13 +5,11 @@ module Glow.Ast.LiftedFunctions where
 import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as M
 import Glow.Ast.Common
+import Glow.Gerbil.Types (Type, Variant)
 import Glow.Prelude
 
 newtype Id = Id BS.ByteString
   deriving (Show, Read, Eq, Ord, IsString)
-
-newtype TypeVar = TypeVar Id
-  deriving (Show, Read, Eq, Ord)
 
 data Module = Module [TopStmt]
   deriving (Show, Read, Eq)
@@ -21,8 +19,8 @@ data TopStmt
   | -- Note: in the grammar there are both (deftype id type) and
     -- (deftype (id tyvar ...) type); here we just combine them, where the
     -- first variant has an empty list (likewise for defdata).
-    TsDefType Id [TypeVar] Type
-  | TsDefData Id [TypeVar] [Variant]
+    TsDefType Id [Id] Type
+  | TsDefData Id [Id] [Variant]
   | TsDefInteraction Id InteractionDef
   | -- | participant id (if any), function id, function def:
     TsDefLambda (Maybe Id) Id (Lambda BodyStmt)
@@ -59,9 +57,6 @@ data Switch stmt = Switch
   { swArg :: ArgExpr,
     swBranches :: [(Pat, [stmt])]
   }
-  deriving (Show, Read, Eq)
-
-data Variant = Variant Id [Type]
   deriving (Show, Read, Eq)
 
 data Expr
@@ -107,13 +102,4 @@ data Pat
   | PRecord (Record Pat)
   | POr [Pat]
   | PConst Constant
-  deriving (Show, Read, Eq)
-
-data Type
-  = TyId Id [Type] -- both id and (id type ...)
-  | TyInt IntType
-  | TyVar TypeVar
-  | TyTuple [Type]
-  | TyRecord (Record Type)
-  | TyFunc [Type] Type
   deriving (Show, Read, Eq)

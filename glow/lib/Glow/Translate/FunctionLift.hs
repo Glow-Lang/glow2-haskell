@@ -60,7 +60,8 @@ liftTopStmt mpart locals = \case
         return (ts
                 <> [TsDefLambda mpart (Id f2) (Lambda (Id <$> cs) (Id <$> xs) bs2),
                     TsBodyStmt (BsPartStmt mpart (PsDef (Id f) (ExCapture (AEVar (Id f2)) (AEVar . Id <$> cs))))]))
-  GGT.DefineDatatype _ _ -> error "TODO: fix define datatype from Glow.Gerbil.Types to express what TsDefData can"
+  GGT.DefineType f xs b -> return [TsDefType (Id f) (Id <$> xs) b]
+  GGT.DefineDatatype f xs vs -> return [TsDefData (Id f) (Id <$> xs) vs]
   -- cases for BodyStmt
   GGT.Publish (GGT.Variable p) xs -> return [TsBodyStmt (BsPublish (Id p) (Id x)) | GGT.Variable x <- xs]
   GGT.Deposit (GGT.Variable p) am -> return [TsBodyStmt (BsDeposit (Id p) (translateAssetMap am))]
@@ -124,7 +125,7 @@ translateExpr :: GGT.Expression -> Expr
 translateExpr = \case
   GGT.Digest as -> ExDigest (translateArgExpr <$> as)
   GGT.Sign a -> ExSign (translateArgExpr a)
-  GGT.Input t a -> ExInput (translateType t) (translateArgExpr a)
+  GGT.Input t a -> ExInput t (translateArgExpr a)
   GGT.EqlExpr a b -> ExEq (translateArgExpr a) (translateArgExpr b)
   GGT.AppExpr f as -> ExApp (translateArgExpr f) (translateArgExpr <$> as)
   GGT.TrvExpr a -> ExArg (translateArgExpr a)
@@ -157,16 +158,6 @@ translatePat :: GGT.Pattern -> Pat
 translatePat = \case
   GGT.VarPat x -> PVar (Id x)
   GGT.ValPat v -> PConst (translateConst v)
-
-translateType :: GGT.Type -> Type
--- TODO: merge GGT.Type and Type into a single common type,
---       eliminate need for translation here
-translateType = \case
-  GGT.TyArrow ins out -> TyFunc (translateType <$> ins) (translateType out)
-  GGT.TyName x -> TyId (Id x) []
-  GGT.TyNameSubtype x _ -> TyId (Id x) []
-  GGT.TyTuple ts -> TyTuple (translateType <$> ts)
-  t -> error ("TODO: Glow.Translate.FunctionLift.translateType unknown type: " <> show t)
 
 ----------
 

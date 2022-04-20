@@ -31,6 +31,10 @@ parseKV p (List [Atom k, v]) = Just (BS8.pack k, p v)
 parseKV _ (List [_, _]) = Nothing
 parseKV _ sexp = error $ "parseKV: S-expression is not a key-value pair: " <> show sexp
 
+parseQuoteName :: SExpr -> ByteString
+parseQuoteName (List [Atom "quote", Atom name]) = BS8.pack name
+parseQuoteName sexp = error $ "parseQuoteAtom: S-expression is not a quoted atom: " <> show sexp
+
 parseType :: SExpr -> Type
 parseType (List [Atom "type:arrow", List (Atom "@list" : params), result]) =
   TyArrow (map parseType params) (parseType result)
@@ -48,6 +52,10 @@ parseType (List [Atom "type:record", List (Atom "symdict" : entries)]) =
   TyRecord (Map.fromList [(BS8.pack k, parseType v) | List [Atom k, v] <- entries])
 parseType sexp =
   TyUnknown (BS8.pack $ show sexp)
+
+parseVariant :: SExpr -> Variant
+parseVariant (List (Atom name : fields)) = Variant (BS8.pack name) (parseType <$> fields)
+parseVariant sexp = error $ "parseVariant: S-expression is not a datatype variant: " <> show sexp
 
 parseAssetMap :: [SExpr] -> AssetMap
 parseAssetMap = Map.fromList . map parseField

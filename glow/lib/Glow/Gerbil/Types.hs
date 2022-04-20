@@ -38,7 +38,7 @@ data Type
     -- it is convienient to be able print out a larger type which has un-parsable
     -- bits, so we can see what of a program we handle and what we don't.
     TyUnknown ByteString
-  deriving (Eq, Show)
+  deriving (Eq, Read, Show)
 
 -- TODO: support lambdas with CPS
 data Statement interactionDef
@@ -47,8 +47,11 @@ data Statement interactionDef
   | DefineInteraction ByteString interactionDef
   | Define ByteString Expression
   | DefineFunction ByteString [ByteString] [(Statement interactionDef)]
-  -- expand DefineDataType variant to express more things
-  | DefineDatatype ByteString [(ByteString, Integer)]
+  | -- Note: in the grammar there are both (deftype id type) and
+    -- (deftype (id tyvar ...) type); here we just combine them, where the
+    -- first variant has an empty list (likewise for defdata).
+    DefineType ByteString [ByteString] Type
+  | DefineDatatype ByteString [ByteString] [Variant]
   | AtParticipant GlowValueRef (Statement interactionDef)
   | SetParticipant GlowValueRef
   | Publish GlowValueRef [GlowValueRef]
@@ -79,6 +82,9 @@ data ProjectInteractionDef = ProjectInteractionDef
   deriving stock (Generic, Eq, Show)
 
 type ProjectStatement = Statement ProjectInteractionDef
+
+data Variant = Variant ByteString [Type]
+  deriving stock (Generic, Show, Read, Eq)
 
 data Expression
   = ExpectPublished ByteString
