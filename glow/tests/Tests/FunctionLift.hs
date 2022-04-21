@@ -1,6 +1,6 @@
 module Tests.FunctionLift where
 
-import Control.Monad.State
+import Control.Monad.State (evalState, execState)
 import qualified Data.Map.Strict as Map
 import Glow.Ast.Common
 import Glow.Ast.LiftedFunctions
@@ -39,7 +39,7 @@ tests = describe "Glow.Translate.FunctionLift" $ do
         (GGT.DefineFunction "adder" ["x"]
           [GGT.DefineFunction "add-x" ["y"] [GGT.Return (GGT.AppExpr (TrexVar "+") [TrexVar "x", TrexVar "y"])],
            GGT.Return (GGT.TrvExpr (TrexVar "add-x"))]))
-      (execState (mapM fresh ["adder", "x", "add-x", "y", "+"]) Map.empty)
+      (execState (traverse fresh ["adder", "x", "add-x", "y", "+"]) Map.empty)
     `shouldBe`
       [TsDefLambda Nothing "add-x0" (Lambda ["x"] ["y"] [BsPartStmt Nothing (PsReturn (ExApp (TrexVar "+") [TrexVar "x", TrexVar "y"]))]),
        TsDefLambda Nothing "adder" (Lambda [] ["x"]
@@ -59,7 +59,7 @@ tests = describe "Glow.Translate.FunctionLift" $ do
              GGT.DebugLabel "dlb3",
              GGT.Withdraw (TrexVar "A") (Map.fromList [ ( "U" , TrexVar "u" ) ]),
              GGT.Return (GGT.TrvExpr (TrexConst CUnit))])))
-      (execState (mapM fresh ["swap", "A", "B", "T", "U", "t", "u", "dlb1", "dlb2", "dlb3"]) Map.empty)
+      (execState (traverse fresh ["swap", "A", "B", "T", "U", "t", "u", "dlb1", "dlb2", "dlb3"]) Map.empty)
     `shouldBe`
       [TsDefInteraction "swap"
         (InteractionDef ["A", "B"] ["T", "U"] ["t", "u"]
@@ -83,7 +83,7 @@ tests = describe "Glow.Translate.FunctionLift" $ do
              GGT.DebugLabel "dlb2",
              GGT.Withdraw (TrexVar "Seller") (Map.fromList [ ( "DefaultToken" , TrexVar "price" ) ]),
              GGT.Return (GGT.TrvExpr (TrexConst CUnit))])))
-      (execState (mapM fresh ["buySig", "Buyer", "Seller", "DefaultToken", "digest0", "price", "dlb1", "signature", "tmp", "isValidSignature", "dlb2"]) Map.empty)
+      (execState (traverse fresh ["buySig", "Buyer", "Seller", "DefaultToken", "digest0", "price", "dlb1", "signature", "tmp", "isValidSignature", "dlb2"]) Map.empty)
     `shouldBe`
       [TsDefInteraction "buySig"
         (InteractionDef ["Buyer", "Seller"] ["DefaultToken"] ["digest0", "price"]

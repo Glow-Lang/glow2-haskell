@@ -12,7 +12,8 @@ where
 
 import Control.Monad.State
 import qualified Data.ByteString as BS
-import Data.Map.Strict as Map (Map, empty)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map (empty)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Data.Void (Void)
@@ -107,6 +108,6 @@ frontEndData params = do
             { fedProject = ParseProject.parseModule projectStmts,
               fedAnf = ParseAnf.parseModule anfStmts,
               fedTypeTable = parseTypeTable types,
-              fedUnusedTable = execState (mapM_ Fresh.markAtomsUsed (anfoSEs <> projectoSEs)) Map.empty
+              fedUnusedTable = execState (traverse_ Fresh.markAtomsUsed (anfoSEs <> projectoSEs)) Map.empty
             }
       _ -> error ("wrong number of outputs: " <> show (length projectoSEs, length anfoSEs))

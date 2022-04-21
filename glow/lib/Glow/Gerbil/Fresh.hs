@@ -2,7 +2,6 @@
 
 module Glow.Gerbil.Fresh where
 
-import Control.Monad (return, mapM_)
 import Control.Monad.State (State, get, put)
 import Data.ByteString.Char8 as BS8 (ByteString, pack, unpack, spanEnd)
 import Data.List (init)
@@ -50,14 +49,14 @@ fresh bs = do
   let ul = Map.findWithDefault [] s ut
   let (n2, ul2) = useUnused ul n
   put (Map.insert s ul2 ut)
-  return (bsnToBs (s, n2))
+  pure (bsnToBs (s, n2))
 
 markUsed :: ByteString -> State UnusedTable ()
-markUsed bs = fresh bs *> return ()
+markUsed bs = fresh bs *> pure ()
 
 markAtomsUsed :: SExpr -> State UnusedTable ()
 markAtomsUsed = \case
   Atom bs -> markUsed (BS8.pack bs)
-  List l -> mapM_ markAtomsUsed l
-  ConsList l e -> mapM_ markAtomsUsed l *> markAtomsUsed e
-  _ -> return ()
+  List l -> traverse_ markAtomsUsed l
+  ConsList l e -> traverse_ markAtomsUsed l *> markAtomsUsed e
+  _ -> pure ()

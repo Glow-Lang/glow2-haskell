@@ -2,7 +2,6 @@
 
 module Glow.Translate.FunctionLift where
 
-import Control.Monad (return, mapM)
 import Control.Monad.Extra (concatMapM)
 import Control.Monad.State (State)
 import Data.ByteString (ByteString)
@@ -50,47 +49,47 @@ liftTopStmt mpart locals = \case
     (case mpart of
       Nothing -> do
        (ts, bs2) <- liftBodyStmts mpart (locals `union` ps `union` as `union` xs) bs
-       return (ts <> [TsDefInteraction (Id i) (InteractionDef (Id <$> ps) (Id <$> as) (Id <$> xs) bs2)])
+       pure (ts <> [TsDefInteraction (Id i) (InteractionDef (Id <$> ps) (Id <$> as) (Id <$> xs) bs2)])
       Just _ -> error ("interaction definition not allowed within a participant: " <> show i))
   GGT.DefineFunction f xs bs -> do
     (ts, bs2) <- liftBodyStmts mpart (locals `union` [f] `union` xs) bs
     (case intersect locals (usedVars bs \\ xs) of
-      [] -> return (ts <> [TsDefLambda mpart (Id f) (Lambda [] (Id <$> xs) bs2)])
+      [] -> pure (ts <> [TsDefLambda mpart (Id f) (Lambda [] (Id <$> xs) bs2)])
       cs -> do
         f2 <- fresh f
-        return (ts
+        pure (ts
                 <> [TsDefLambda mpart (Id f2) (Lambda (Id <$> cs) (Id <$> xs) bs2),
                     TsBodyStmt (BsPartStmt mpart (PsDef (Id f) (ExCapture (TrexVar (Id f2)) (TrexVar . Id <$> cs))))]))
-  GGT.DefineType f xs b -> return [TsDefType (Id f) (Id <$> xs) b]
-  GGT.DefineDatatype f xs vs -> return [TsDefData (Id f) (Id <$> xs) vs]
+  GGT.DefineType f xs b -> pure [TsDefType (Id f) (Id <$> xs) b]
+  GGT.DefineDatatype f xs vs -> pure [TsDefData (Id f) (Id <$> xs) vs]
   -- cases for BodyStmt
-  GGT.Publish (TrexVar (Id p)) xs -> return [TsBodyStmt (BsPublish (Id p) (Id x)) | TrexVar (Id x) <- xs]
-  GGT.Deposit (TrexVar (Id p)) am -> return [TsBodyStmt (BsDeposit (Id p) am)]
-  GGT.Withdraw (TrexVar (Id p)) am -> return [TsBodyStmt (BsWithdraw (Id p) am)]
+  GGT.Publish (TrexVar (Id p)) xs -> pure [TsBodyStmt (BsPublish (Id p) (Id x)) | TrexVar (Id x) <- xs]
+  GGT.Deposit (TrexVar (Id p)) am -> pure [TsBodyStmt (BsDeposit (Id p) am)]
+  GGT.Withdraw (TrexVar (Id p)) am -> pure [TsBodyStmt (BsWithdraw (Id p) am)]
   GGT.Switch a cs -> 
     (case mpart of
       -- case for BsSwitch
       Nothing -> do
         (ts, cs2) <- liftSwitchCases mpart locals liftBodyStmts cs
-        return (ts <> [TsBodyStmt (BsSwitch (Switch a cs2))])
+        pure (ts <> [TsBodyStmt (BsSwitch (Switch a cs2))])
       -- case for PsSwitch
       Just _ -> do
         (ts, cs2) <- liftSwitchCases mpart locals liftPartStmts cs
-        return (ts <> [TsBodyStmt (BsPartStmt mpart (PsSwitch (Switch a cs2)))]))
+        pure (ts <> [TsBodyStmt (BsPartStmt mpart (PsSwitch (Switch a cs2)))]))
   -- cases for PartStmt
-  GGT.Label bs -> return [TsBodyStmt (BsPartStmt mpart (PsLabel (Id bs)))]
-  GGT.DebugLabel _ -> return []
-  GGT.SetParticipant _ -> return []
-  GGT.Define x e -> return [TsBodyStmt (BsPartStmt mpart (PsDef (Id x) (translateExpr e)))]
-  GGT.Ignore e -> return [TsBodyStmt (BsPartStmt mpart (PsIgnore (translateExpr e)))]
-  GGT.Require a -> return [TsBodyStmt (BsPartStmt mpart (PsRequire a))]
-  GGT.Return e -> return [TsBodyStmt (BsPartStmt mpart (PsReturn (translateExpr e)))]
+  GGT.Label bs -> pure [TsBodyStmt (BsPartStmt mpart (PsLabel (Id bs)))]
+  GGT.DebugLabel _ -> pure []
+  GGT.SetParticipant _ -> pure []
+  GGT.Define x e -> pure [TsBodyStmt (BsPartStmt mpart (PsDef (Id x) (translateExpr e)))]
+  GGT.Ignore e -> pure [TsBodyStmt (BsPartStmt mpart (PsIgnore (translateExpr e)))]
+  GGT.Require a -> pure [TsBodyStmt (BsPartStmt mpart (PsRequire a))]
+  GGT.Return e -> pure [TsBodyStmt (BsPartStmt mpart (PsReturn (translateExpr e)))]
   s -> error ("Glow.Translate.FunctionLift.liftTopStmt: unexpected statement" <> show s)
 
 liftBodyStmts :: Maybe Id -> [ByteString] -> [GGT.AnfStatement] -> LiftState [BodyStmt]
 liftBodyStmts mpart locals stmts = do
   stmts2 <- liftTopStmts mpart (locals `union` localDefs stmts) stmts
-  return (splitBody stmts2)
+  pure (splitBody stmts2)
 
 splitBody :: [TopStmt] -> ([TopStmt], [BodyStmt])
 splitBody stmts =
@@ -106,17 +105,17 @@ splitBody1 = \case
 liftPartStmts :: Maybe Id -> [ByteString] -> [GGT.AnfStatement] -> LiftState [PartStmt]
 liftPartStmts mpart locals stmts = do
   (ts, bs) <- liftBodyStmts mpart locals stmts
-  return (ts, [ps | BsPartStmt _ ps <- bs])
+  pure (ts, [ps | BsPartStmt _ ps <- bs])
 
 liftSwitchCases :: Maybe Id -> [ByteString] -> (Maybe Id -> [ByteString] -> [GGT.AnfStatement] -> LiftState [stmt]) -> [(Pat, [GGT.AnfStatement])] -> LiftState [(Pat, [stmt])]
 liftSwitchCases mpart locals liftStmts cs = do
-  tcs2 <- mapM (liftSwitchCase mpart locals liftStmts) cs
-  return (concatMap fst tcs2, map snd tcs2)
+  tcs2 <- traverse (liftSwitchCase mpart locals liftStmts) cs
+  pure (concatMap fst tcs2, map snd tcs2)
 
 liftSwitchCase :: Maybe Id -> [ByteString] -> (Maybe Id -> [ByteString] -> [GGT.AnfStatement] -> LiftState [stmt]) -> (Pat, [GGT.AnfStatement]) -> LiftState (Pat, [stmt])
 liftSwitchCase mpart locals liftStmts (pat, stmts) = do
   (ts, bs) <- liftStmts mpart (locals `union` patVars pat) stmts
-  return (ts, (pat, bs))
+  pure (ts, (pat, bs))
 
 ----------
 
