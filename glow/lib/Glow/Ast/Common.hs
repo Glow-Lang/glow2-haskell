@@ -7,7 +7,7 @@ import qualified Data.ByteString as BS
 import Glow.Prelude
 
 -- | An identifier or variable
-newtype Id = Id BS.ByteString
+newtype Id = Id { idBS :: BS.ByteString }
   deriving (Show, Read, Eq, Ord, IsString)
 
 data IntType = IntType

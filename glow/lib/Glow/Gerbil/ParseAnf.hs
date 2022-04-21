@@ -6,6 +6,7 @@
 module Glow.Gerbil.ParseAnf where
 
 import qualified Data.ByteString.Char8 as BS8
+import Glow.Ast.Common (Id(..))
 import Glow.Gerbil.ParseCommon
 import Glow.Gerbil.Types as Glow
 import Glow.Prelude
@@ -22,17 +23,17 @@ parseModule = \case
 parseStatement :: SExpr -> AnfStatement
 parseStatement = \case
   Builtin "@label" [Atom name] ->
-    Label $ BS8.pack name
+    Label $ Id (BS8.pack name)
   Builtin "@debug-label" [Atom name] ->
-    DebugLabel $ BS8.pack name
+    DebugLabel $ Id (BS8.pack name)
   Builtin "deftype" [Atom name, typeDefinition] ->
-    DefineType (BS8.pack name) [] (parseType typeDefinition)
+    DefineType (Id (BS8.pack name)) [] (parseType typeDefinition)
   Builtin "deftype" [List (Atom name : typeVariables), typeDefinition] ->
-    DefineType (BS8.pack name) (parseQuoteName <$> typeVariables) (parseType typeDefinition)
+    DefineType (Id (BS8.pack name)) (parseQuoteId <$> typeVariables) (parseType typeDefinition)
   Builtin "defdata" (Atom name : variants) ->
-    DefineDatatype (BS8.pack name) [] (parseVariant <$> variants)
+    DefineDatatype (Id (BS8.pack name)) [] (parseVariant <$> variants)
   Builtin "defdata" (List (Atom name : typeVariables) : variants) ->
-    DefineDatatype (BS8.pack name) (parseQuoteName <$> typeVariables) (parseVariant <$> variants)
+    DefineDatatype (Id (BS8.pack name)) (parseQuoteId <$> typeVariables) (parseVariant <$> variants)
   Builtin
     "def"
     [ Atom contractName,
@@ -51,31 +52,31 @@ parseStatement = \case
           )
       ] ->
       DefineInteraction
-        (BS8.pack contractName)
+        (Id (BS8.pack contractName))
         AnfInteractionDef
-          { aidParticipantNames = BS8.pack . parseName <$> participantNames,
-            aidAssetNames = BS8.pack . parseName <$> assetNames,
-            aidArgumentNames = BS8.pack . parseName <$> argumentNames,
+          { aidParticipantNames = Id . BS8.pack . parseName <$> participantNames,
+            aidAssetNames = Id . BS8.pack . parseName <$> assetNames,
+            aidArgumentNames = Id . BS8.pack . parseName <$> argumentNames,
             aidBody = parseStatement <$> body
           }
   Builtin "def" [Atom variableName, Builtin "λ" (List argNames : body)] ->
-    DefineFunction (BS8.pack variableName) (BS8.pack . parseName <$> argNames) (parseStatement <$> body)
+    DefineFunction (Id (BS8.pack variableName)) (Id . BS8.pack . parseName <$> argNames) (parseStatement <$> body)
   Builtin "def" [Atom variableName, sexpr] ->
-    Define (BS8.pack variableName) (parseExpression sexpr)
+    Define (Id (BS8.pack variableName)) (parseExpression sexpr)
   Builtin "ignore!" [sexpr] ->
     Ignore (parseExpression sexpr)
   Builtin "return" [sexpr] ->
     Return (parseExpression sexpr)
   Builtin "@" [Atom roleName, s] ->
-    AtParticipant (var roleName) (parseStatement s)
+    AtParticipant (Id (BS8.pack roleName)) (parseStatement s)
   Builtin "set-participant" [roleName] ->
-    SetParticipant (var $ parseName roleName)
+    SetParticipant (Id . BS8.pack $ parseName roleName)
   Builtin "publish!" (Atom roleName : vars) ->
-    Publish (var roleName) (var <$> (parseName <$> vars))
+    Publish (Id (BS8.pack roleName)) (Id . BS8.pack <$> (parseName <$> vars))
   Builtin "deposit!" [Atom roleName, Builtin "@record" amounts] ->
-    Deposit (var roleName) (parseAssetMap amounts)
+    Deposit (Id (BS8.pack roleName)) (parseAssetMap amounts)
   Builtin "withdraw!" [Atom roleName, Builtin "@record" amounts] ->
-    Withdraw (var roleName) (parseAssetMap amounts)
+    Withdraw (Id (BS8.pack roleName)) (parseAssetMap amounts)
   Builtin "require!" [Atom variableName] ->
     Require $ var variableName
   Builtin "assert!" [Atom variableName] ->

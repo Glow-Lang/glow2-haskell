@@ -14,17 +14,13 @@ import Glow.Prelude
 -- TODO: variable cleanup, only keep live variables between each transaction
 type GlowProjectContract = M.Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)
 
-type VariableMap = M.Map ByteString GlowValue
+type VariableMap = M.Map Id GlowValue
 
-type ProjectFunctionMap = M.Map ByteString (ByteString, [ProjectStatement])
-
-type DatatypeMap = M.Map ByteString [(ByteString, Integer)]
+type DatatypeMap = M.Map Id [(Id, Integer)]
 
 type AssetMap = Record TrivExpr
 
-type ProjectFunction = (ByteString, [ProjectStatement])
-
-type ExecutionPoint = ByteString
+type ExecutionPoint = Id
 
 type Record val = M.Map Id val
 
@@ -45,21 +41,21 @@ data Type
 
 -- TODO: support lambdas with CPS
 data Statement interactionDef
-  = Label ByteString
-  | DebugLabel ByteString
-  | DefineInteraction ByteString interactionDef
-  | Define ByteString Expression
-  | DefineFunction ByteString [ByteString] [(Statement interactionDef)]
+  = Label Id
+  | DebugLabel Id
+  | DefineInteraction Id interactionDef
+  | Define Id Expression
+  | DefineFunction Id [Id] [(Statement interactionDef)]
   | -- Note: in the grammar there are both (deftype id type) and
     -- (deftype (id tyvar ...) type); here we just combine them, where the
     -- first variant has an empty list (likewise for defdata).
-    DefineType ByteString [ByteString] Type
-  | DefineDatatype ByteString [ByteString] [Variant]
-  | AtParticipant TrivExpr (Statement interactionDef)
-  | SetParticipant TrivExpr
-  | Publish TrivExpr [TrivExpr]
-  | Deposit TrivExpr AssetMap
-  | Withdraw TrivExpr AssetMap
+    DefineType Id [Id] Type
+  | DefineDatatype Id [Id] [Variant]
+  | AtParticipant Id (Statement interactionDef)
+  | SetParticipant Id
+  | Publish Id [Id]
+  | Deposit Id AssetMap
+  | Withdraw Id AssetMap
   | Ignore Expression
   | Require TrivExpr
   | Return Expression
@@ -67,9 +63,9 @@ data Statement interactionDef
   deriving stock (Generic, Eq, Show)
 
 data AnfInteractionDef = AnfInteractionDef
-  { aidParticipantNames :: [ByteString],
-    aidAssetNames :: [ByteString],
-    aidArgumentNames :: [ByteString],
+  { aidParticipantNames :: [Id],
+    aidAssetNames :: [Id],
+    aidArgumentNames :: [Id],
     aidBody :: [AnfStatement]
   }
   deriving stock (Generic, Eq, Show)
@@ -77,20 +73,20 @@ data AnfInteractionDef = AnfInteractionDef
 type AnfStatement = Statement AnfInteractionDef
 
 data ProjectInteractionDef = ProjectInteractionDef
-  { pidParticipantNames :: [ByteString],
-    pidAssetNames :: [ByteString],
-    pidArgumentNames :: [ByteString],
-    pidInteractions :: [(ByteString, [ProjectStatement])]
+  { pidParticipantNames :: [Id],
+    pidAssetNames :: [Id],
+    pidArgumentNames :: [Id],
+    pidInteractions :: [(Maybe Id, [ProjectStatement])]
   }
   deriving stock (Generic, Eq, Show)
 
 type ProjectStatement = Statement ProjectInteractionDef
 
-data Variant = Variant ByteString [Type]
+data Variant = Variant Id [Type]
   deriving stock (Generic, Show, Read, Eq)
 
 data Expression
-  = ExpectPublished ByteString
+  = ExpectPublished Id
   | Digest [TrivExpr]
   | Sign TrivExpr
   | Input Type TrivExpr
@@ -100,7 +96,7 @@ data Expression
   deriving stock (Generic, Eq, Show)
 
 data GlowValue
-  = Constructor ByteString Integer [GlowValue]
+  = Constructor Id Integer [GlowValue]
   | PubKey LedgerPubKey
   | Signature LedgerSignature
   | ByteString ByteString

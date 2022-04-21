@@ -51,13 +51,13 @@ tests = describe "Glow.Translate.FunctionLift" $ do
         (GGT.DefineInteraction
           "swap"
           (GGT.AnfInteractionDef ["A", "B"] ["T", "U"] ["t", "u"]
-            [GGT.Deposit (TrexVar "A") (Map.fromList [ ( "T" , TrexVar "t" ) ]),
+            [GGT.Deposit "A" (Map.fromList [ ( "T" , TrexVar "t" ) ]),
              GGT.DebugLabel "dlb1",
-             GGT.Deposit (TrexVar "B") (Map.fromList [ ( "U" , TrexVar "u" ) ]),
+             GGT.Deposit "B" (Map.fromList [ ( "U" , TrexVar "u" ) ]),
              GGT.DebugLabel "dlb2",
-             GGT.Withdraw (TrexVar "B") (Map.fromList [ ( "T" , TrexVar "t" ) ]),
+             GGT.Withdraw "B" (Map.fromList [ ( "T" , TrexVar "t" ) ]),
              GGT.DebugLabel "dlb3",
-             GGT.Withdraw (TrexVar "A") (Map.fromList [ ( "U" , TrexVar "u" ) ]),
+             GGT.Withdraw "A" (Map.fromList [ ( "U" , TrexVar "u" ) ]),
              GGT.Return (GGT.TrvExpr (TrexConst CUnit))])))
       (execState (traverse fresh ["swap", "A", "B", "T", "U", "t", "u", "dlb1", "dlb2", "dlb3"]) Map.empty)
     `shouldBe`
@@ -73,15 +73,15 @@ tests = describe "Glow.Translate.FunctionLift" $ do
       (liftTopStmt Nothing []
         (GGT.DefineInteraction "buySig"
           (GGT.AnfInteractionDef ["Buyer", "Seller"] ["DefaultToken"] ["digest0", "price"]
-            [GGT.Deposit (TrexVar "Buyer") (Map.fromList [ ( "DefaultToken" , TrexVar "price" ) ]),
+            [GGT.Deposit "Buyer" (Map.fromList [ ( "DefaultToken" , TrexVar "price" ) ]),
              GGT.DebugLabel "dlb1",
-             GGT.AtParticipant (TrexVar "Seller")
+             GGT.AtParticipant "Seller"
                (GGT.Define "signature" (GGT.Sign (TrexVar "digest0"))),
-             GGT.Publish (TrexVar "Seller") [TrexVar "signature"],
+             GGT.Publish "Seller" ["signature"],
              GGT.Define "tmp" (GGT.AppExpr (TrexVar "isValidSignature") [TrexVar "Seller", TrexVar "digest0", TrexVar "signature"]),
              GGT.Require (TrexVar "tmp"),
              GGT.DebugLabel "dlb2",
-             GGT.Withdraw (TrexVar "Seller") (Map.fromList [ ( "DefaultToken" , TrexVar "price" ) ]),
+             GGT.Withdraw "Seller" (Map.fromList [ ( "DefaultToken" , TrexVar "price" ) ]),
              GGT.Return (GGT.TrvExpr (TrexConst CUnit))])))
       (execState (traverse fresh ["buySig", "Buyer", "Seller", "DefaultToken", "digest0", "price", "dlb1", "signature", "tmp", "isValidSignature", "dlb2"]) Map.empty)
     `shouldBe`

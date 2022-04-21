@@ -32,9 +32,9 @@ parseKV p (List [Atom k, v]) = Just (BS8.pack k, p v)
 parseKV _ (List [_, _]) = Nothing
 parseKV _ sexp = error $ "parseKV: S-expression is not a key-value pair: " <> show sexp
 
-parseQuoteName :: SExpr -> ByteString
-parseQuoteName (List [Atom "quote", Atom name]) = BS8.pack name
-parseQuoteName sexp = error $ "parseQuoteAtom: S-expression is not a quoted atom: " <> show sexp
+parseQuoteId :: SExpr -> Id
+parseQuoteId (List [Atom "quote", Atom name]) = Id (BS8.pack name)
+parseQuoteId sexp = error $ "parseQuoteAtom: S-expression is not a quoted atom: " <> show sexp
 
 parseType :: SExpr -> Type
 parseType (List [Atom "type:arrow", List (Atom "@list" : params), result]) =
@@ -55,7 +55,7 @@ parseType sexp =
   TyUnknown (BS8.pack $ show sexp)
 
 parseVariant :: SExpr -> Variant
-parseVariant (List (Atom name : fields)) = Variant (BS8.pack name) (parseType <$> fields)
+parseVariant (List (Atom name : fields)) = Variant (Id (BS8.pack name)) (parseType <$> fields)
 parseVariant sexp = error $ "parseVariant: S-expression is not a datatype variant: " <> show sexp
 
 parseAssetMap :: [SExpr] -> AssetMap
@@ -67,7 +67,7 @@ parseAssetMap = Map.fromList . map parseField
 parseExpression :: SExpr -> Expression
 parseExpression = \case
   Builtin "expect-published" [Builtin "quote" [variableName]] ->
-    ExpectPublished (BS8.pack $ parseName variableName)
+    ExpectPublished (Id (BS8.pack $ parseName variableName))
   Builtin "@app" (fun : args) ->
     AppExpr (parseTrivialExpression fun) (parseTrivialExpression <$> args)
   Builtin "==" [a, b] ->

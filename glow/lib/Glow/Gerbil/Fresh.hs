@@ -7,6 +7,7 @@ import Data.ByteString.Char8 as BS8 (ByteString, pack, unpack, spanEnd)
 import Data.List (init)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Glow.Ast.Common (Id(..))
 import Glow.Prelude
 import Numeric.Natural
 import Text.Read (readMaybe)
@@ -60,3 +61,6 @@ markAtomsUsed = \case
   List l -> traverse_ markAtomsUsed l
   ConsList l e -> traverse_ markAtomsUsed l *> markAtomsUsed e
   _ -> pure ()
+
+freshId :: Id -> State UnusedTable Id
+freshId (Id x) = Id <$> fresh x
