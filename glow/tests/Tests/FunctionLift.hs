@@ -2,6 +2,7 @@ module Tests.FunctionLift where
 
 import Control.Monad.State (evalState, execState)
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set (empty)
 import Glow.Ast.Common
 import Glow.Ast.LiftedFunctions
 import Glow.Gerbil.Fresh
@@ -13,14 +14,14 @@ import Test.Hspec
 tests = describe "Glow.Translate.FunctionLift" $ do
   it ("Should translate trivial statements") $ do
     evalState
-      (liftTopStmt Nothing []
+      (liftTopStmt Nothing Set.empty
         (GGT.Define "x" (GGT.TrvExpr (TrexConst (cInteger 3)))))
       Map.empty
     `shouldBe`
       [TsBodyStmt (BsPartStmt Nothing (PsDef "x" (ExTriv (TrexConst (cInteger 3)))))]
   it ("Should lift already-closed functions to the top without adding capture parameters") $ do
     evalState
-      (liftTopStmt Nothing []
+      (liftTopStmt Nothing Set.empty
         (GGT.DefineFunction "sumsqr" ["a", "b"]
           [GGT.DefineFunction "sqr" ["x"] [GGT.Return (GGT.AppExpr (TrexVar "*") [TrexVar "x", TrexVar "x"])],
            GGT.Define "tmp" (GGT.AppExpr (TrexVar "sqr") [TrexVar "a"]),
@@ -35,7 +36,7 @@ tests = describe "Glow.Translate.FunctionLift" $ do
           BsPartStmt Nothing (PsReturn (ExApp (TrexVar "+") [TrexVar "tmp", TrexVar "tmp0"]))])]
   it ("Should lift closures with their capture parameters") $ do
     evalState
-      (liftTopStmt Nothing []
+      (liftTopStmt Nothing Set.empty
         (GGT.DefineFunction "adder" ["x"]
           [GGT.DefineFunction "add-x" ["y"] [GGT.Return (GGT.AppExpr (TrexVar "+") [TrexVar "x", TrexVar "y"])],
            GGT.Return (GGT.TrvExpr (TrexVar "add-x"))]))
@@ -47,7 +48,7 @@ tests = describe "Glow.Translate.FunctionLift" $ do
           BsPartStmt Nothing (PsReturn (ExTriv (TrexVar "add-x")))])]
   it ("Should pass on asset_swap.glow") $ do
     evalState
-      (liftTopStmt Nothing []
+      (liftTopStmt Nothing Set.empty
         (GGT.DefineInteraction
           "swap"
           (GGT.AnfInteractionDef ["A", "B"] ["T", "U"] ["t", "u"]
@@ -70,7 +71,7 @@ tests = describe "Glow.Translate.FunctionLift" $ do
            BsPartStmt Nothing (PsReturn (ExTriv (TrexConst CUnit)))])]
   it ("Should pass on buy_sig") $ do
     evalState
-      (liftTopStmt Nothing []
+      (liftTopStmt Nothing Set.empty
         (GGT.DefineInteraction "buySig"
           (GGT.AnfInteractionDef ["Buyer", "Seller"] ["DefaultToken"] ["digest0", "price"]
             [GGT.Deposit "Buyer" (Map.fromList [ ( "DefaultToken" , TrexVar "price" ) ]),

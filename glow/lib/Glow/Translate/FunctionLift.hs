@@ -4,7 +4,8 @@ module Glow.Translate.FunctionLift where
 
 import Control.Monad.Extra (concatMapM)
 import Control.Monad.State (State)
-import Data.List (intersect, union, (\\))
+import Data.Set (Set, union, unions, intersection, (\\))
+import qualified Data.Set as Set (fromList, toAscList, empty, singleton)
 import qualified Data.Map.Strict as Map
 import Glow.Ast.Common
 import Glow.Ast.LiftedFunctions
@@ -31,12 +32,12 @@ type LiftState a = State UnusedTable ([TopStmt], a)
 functionLift :: [GGT.AnfStatement] -> State UnusedTable Module
 -- TODO: if the Module type changes to use a Map of top-level functions,
 --       the functions should be filtered and collected into the Map here
-functionLift s = Module <$> liftTopStmts Nothing [] s
+functionLift s = Module <$> liftTopStmts Nothing Set.empty s
 
-liftTopStmts ::  Maybe Id -> [Id] -> [GGT.AnfStatement] -> State UnusedTable [TopStmt]
+liftTopStmts ::  Maybe Id -> Set Id -> [GGT.AnfStatement] -> State UnusedTable [TopStmt]
 liftTopStmts mpart locals = concatMapM (liftTopStmt mpart locals)
 
-liftTopStmt :: Maybe Id -> [Id] -> GGT.AnfStatement -> State UnusedTable [TopStmt]
+liftTopStmt :: Maybe Id -> Set Id -> GGT.AnfStatement -> State UnusedTable [TopStmt]
 -- when mpart is (Just p), must produce TsBodyStmt BsPartStmt (Just p)
 liftTopStmt mpart locals = \case
   -- cases for TopStmt
@@ -47,12 +48,12 @@ liftTopStmt mpart locals = \case
   GGT.DefineInteraction i (GGT.AnfInteractionDef ps as xs bs) ->
     (case mpart of
       Nothing -> do
-       (ts, bs2) <- liftBodyStmts mpart (locals `union` ps `union` as `union` xs) bs
+       (ts, bs2) <- liftBodyStmts mpart (locals `union` Set.fromList ps `union` Set.fromList as `union` Set.fromList xs) bs
        pure (ts <> [TsDefInteraction i (InteractionDef ps as xs bs2)])
       Just _ -> error ("interaction definition not allowed within a participant: " <> show i))
   GGT.DefineFunction f xs bs -> do
-    (ts, bs2) <- liftBodyStmts mpart (locals `union` [f] `union` xs) bs
-    (case intersect locals (usedVars bs \\ xs) of
+    (ts, bs2) <- liftBodyStmts mpart (locals `union` Set.singleton f `union` Set.fromList xs) bs
+    (case Set.toAscList (intersection locals (usedVars bs \\ Set.fromList xs)) of
       [] -> pure (ts <> [TsDefLambda mpart f (Lambda [] xs bs2)])
       cs -> do
         f2 <- freshId f
@@ -84,7 +85,7 @@ liftTopStmt mpart locals = \case
   GGT.Require a -> pure [TsBodyStmt (BsPartStmt mpart (PsRequire a))]
   GGT.Return e -> pure [TsBodyStmt (BsPartStmt mpart (PsReturn (translateExpr e)))]
 
-liftBodyStmts :: Maybe Id -> [Id] -> [GGT.AnfStatement] -> LiftState [BodyStmt]
+liftBodyStmts :: Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [BodyStmt]
 liftBodyStmts mpart locals stmts = do
   stmts2 <- liftTopStmts mpart (locals `union` localDefs stmts) stmts
   pure (splitBody stmts2)
@@ -100,17 +101,17 @@ splitBody1 = \case
   TsBodyStmt b -> ([], [b])
   t -> ([t], [])
 
-liftPartStmts :: Maybe Id -> [Id] -> [GGT.AnfStatement] -> LiftState [PartStmt]
+liftPartStmts :: Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [PartStmt]
 liftPartStmts mpart locals stmts = do
   (ts, bs) <- liftBodyStmts mpart locals stmts
   pure (ts, [ps | BsPartStmt _ ps <- bs])
 
-liftSwitchCases :: Maybe Id -> [Id] -> (Maybe Id -> [Id] -> [GGT.AnfStatement] -> LiftState [stmt]) -> [(Pat, [GGT.AnfStatement])] -> LiftState [(Pat, [stmt])]
+liftSwitchCases :: Maybe Id -> Set Id -> (Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [stmt]) -> [(Pat, [GGT.AnfStatement])] -> LiftState [(Pat, [stmt])]
 liftSwitchCases mpart locals liftStmts cs = do
   tcs2 <- traverse (liftSwitchCase mpart locals liftStmts) cs
   pure (concatMap fst tcs2, map snd tcs2)
 
-liftSwitchCase :: Maybe Id -> [Id] -> (Maybe Id -> [Id] -> [GGT.AnfStatement] -> LiftState [stmt]) -> (Pat, [GGT.AnfStatement]) -> LiftState (Pat, [stmt])
+liftSwitchCase :: Maybe Id -> Set Id -> (Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [stmt]) -> (Pat, [GGT.AnfStatement]) -> LiftState (Pat, [stmt])
 liftSwitchCase mpart locals liftStmts (pat, stmts) = do
   (ts, bs) <- liftStmts mpart (locals `union` patVars pat) stmts
   pure (ts, (pat, bs))
@@ -131,41 +132,41 @@ translateExpr = \case
 
 ----------
 
-localDefs :: [GGT.AnfStatement] -> [Id]
+localDefs :: [GGT.AnfStatement] -> Set Id
 localDefs = unionMap localDefs1
 
-localDefs1 :: GGT.AnfStatement -> [Id]
+localDefs1 :: GGT.AnfStatement -> Set Id
 -- include function definitions, but not interaction definitions
 -- include localDefs in switch bodies, but not pattern variables
 localDefs1 = \case
-  GGT.Define x _ -> [x]
-  GGT.DefineFunction f _ _ -> [f]
+  GGT.Define x _ -> Set.singleton x
+  GGT.DefineFunction f _ _ -> Set.singleton f
   GGT.AtParticipant _ s -> localDefs1 s
   GGT.Switch _ cs -> unionMap (localDefs . snd) cs
-  _ -> []
+  _ -> Set.empty
 
-usedVars :: [GGT.AnfStatement] -> [Id]
+usedVars :: [GGT.AnfStatement] -> Set Id
 usedVars = unionMap usedVars1
 
-usedVars1 :: GGT.AnfStatement -> [Id]
+usedVars1 :: GGT.AnfStatement -> Set Id
 usedVars1 = \case
   GGT.DefineInteraction _ (GGT.AnfInteractionDef _ _ _ bs) -> usedVars bs
   GGT.Define _ e -> usedVarsExpr e
   GGT.DefineFunction _ _ bs -> usedVars bs
-  GGT.AtParticipant p s -> [p] `union` usedVars1 s
-  GGT.SetParticipant p -> [p]
-  GGT.Publish p xs -> [p] `union` xs
-  GGT.Deposit p am -> [p] `union` usedVarsAM am
-  GGT.Withdraw p am -> [p] `union` usedVarsAM am
+  GGT.AtParticipant p s -> Set.singleton p `union` usedVars1 s
+  GGT.SetParticipant p -> Set.singleton p
+  GGT.Publish p xs -> Set.singleton p `union` Set.fromList xs
+  GGT.Deposit p am -> Set.singleton p `union` usedVarsAM am
+  GGT.Withdraw p am -> Set.singleton p `union` usedVarsAM am
   GGT.Ignore e -> usedVarsExpr e
   GGT.Require a -> usedVarsGVR a
   GGT.Return e -> usedVarsExpr e
   GGT.Switch a cs -> usedVarsGVR a `union` unionMap (usedVars . snd) cs
-  _ -> []
+  _ -> Set.empty
 
-usedVarsExpr :: GGT.Expression -> [Id]
+usedVarsExpr :: GGT.Expression -> Set Id
 usedVarsExpr = \case
-  GGT.ExpectPublished x -> [x]
+  GGT.ExpectPublished x -> Set.singleton x
   GGT.Digest as -> unionMap usedVarsGVR as
   GGT.Sign a -> usedVarsGVR a
   GGT.Input _ a -> usedVarsGVR a
@@ -173,25 +174,25 @@ usedVarsExpr = \case
   GGT.AppExpr f as -> usedVarsGVR f `union` unionMap usedVarsGVR as
   GGT.TrvExpr a -> usedVarsGVR a
 
-usedVarsGVR :: TrivExpr -> [Id]
+usedVarsGVR :: TrivExpr -> Set Id
 usedVarsGVR = \case
-  TrexVar x -> [x]
-  TrexConst _ -> []
+  TrexVar x -> Set.singleton x
+  TrexConst _ -> Set.empty
 
-usedVarsAM :: GGT.AssetMap -> [Id]
+usedVarsAM :: GGT.AssetMap -> Set Id
 usedVarsAM = unionMap usedVarsGVR . Map.elems
 
-unionMap :: Eq b => (a -> [b]) -> [a] -> [b]
-unionMap f as = foldr union [] (map f as)
+unionMap :: Ord b => (a -> Set b) -> [a] -> Set b
+unionMap f as = unions (map f as)
 
-patVars :: Pat -> [Id]
+patVars :: Pat -> Set Id
 patVars = \case
-  PVar x -> [x]
+  PVar x -> Set.singleton x
   PTypeAnno p _ -> patVars p
   PAppCtor _ ps -> unionMap patVars ps
   PList ps -> unionMap patVars ps
   PTuple ps -> unionMap patVars ps
   POr ps -> unionMap patVars ps
   PRecord m -> unionMap patVars (Map.elems m)
-  PWild -> []
-  PConst _ -> []
+  PWild -> Set.empty
+  PConst _ -> Set.empty
