@@ -1,6 +1,7 @@
 module Glow.Consensus.StateChannel where
 
-import qualified Data.Map.Strict as M
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as S
 import Data.Void (Void)
 import qualified Glow.Consensus.Local as Local
@@ -19,7 +20,7 @@ data DirectMessage p d = DirectMessage
 
 data Agreement s p = Agreement
   { agreeProposal :: Proposal s,
-    agreeProofs :: M.Map p (Proof s p)
+    agreeProofs :: Map p (Proof s p)
   }
 
 -- TODO: actually put something here; in a real implementation it would
@@ -64,7 +65,7 @@ validateAgreement ::
   Agreement s p ->
   Maybe (Proposal s)
 validateAgreement allParticipants agreement =
-  if S.fromList (M.keys (agreeProofs agreement)) == allParticipants
+  if S.fromList (Map.keys (agreeProofs agreement)) == allParticipants
     then Just (agreeProposal agreement)
     else Nothing
 

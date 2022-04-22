@@ -17,12 +17,12 @@
 --   depending on the target.
 module Glow.Ast.HighLevel where
 
-import qualified Data.Map.Strict as M
+import Data.Map.Strict (Map)
 import Glow.Ast.Common
 import Glow.Prelude
 
 data Program a = Program
-  { progFuncs :: M.Map Id (Lambda a),
+  { progFuncs :: Map Id (Lambda a),
     -- | Name of entry point in progFuncs.
     progMain :: Id
   }

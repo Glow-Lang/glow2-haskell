@@ -6,23 +6,23 @@
 module Glow.Gerbil.Types where
 
 import Data.ByteString (ByteString)
-import qualified Data.Map.Strict as M
+import Data.Map.Strict (Map)
 import GHC.Generics hiding (Datatype)
 import Glow.Ast.Common (Id, Constant, TrivExpr)
 import Glow.Prelude
 
 -- TODO: variable cleanup, only keep live variables between each transaction
-type GlowProjectContract = M.Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)
+type GlowProjectContract = Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)
 
-type VariableMap = M.Map Id GlowValue
+type VariableMap = Map Id GlowValue
 
-type DatatypeMap = M.Map Id [(Id, Integer)]
+type DatatypeMap = Map Id [(Id, Integer)]
 
 type AssetMap = Record TrivExpr
 
 type ExecutionPoint = Id
 
-type Record val = M.Map Id val
+type Record val = Map Id val
 
 -- | An MLsub type, as emitted by the frontend.
 data Type
