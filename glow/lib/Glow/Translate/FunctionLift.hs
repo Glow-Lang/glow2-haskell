@@ -5,8 +5,8 @@ module Glow.Translate.FunctionLift where
 import Control.Monad.Extra (concatMapM)
 import Control.Monad.State (State, runState)
 import qualified Control.Monad.State as State (get, put)
-import Control.Monad.Trans.RWS.CPS (RWS, execRWS, tell)
-import qualified Control.Monad.Trans.RWS.CPS as RWS (get, put, state)
+import Control.Monad.Trans.RWS.CPS (RWS, execRWS, tell, listen, censor)
+import qualified Control.Monad.Trans.RWS.CPS as RWS (state)
 import Data.Set (Set, union, unions, intersection, (\\))
 import qualified Data.Set as Set (fromList, toAscList, empty, singleton)
 import qualified Data.Map.Strict as Map
@@ -41,6 +41,9 @@ srWS m = do
   let (s2, w) = execRWS m () s1
   State.put s2
   pure w
+
+interceptAW :: (Monoid w) => RWS r w s a -> RWS r w s (a, w)
+interceptAW = censor (const mempty) . listen
 
 ----------
 
@@ -102,9 +105,7 @@ liftTopStmt mpart locals = \case
 
 liftBodyStmts :: Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [BodyStmt]
 liftBodyStmts mpart locals stmts = do
-  ut1 <- RWS.get
-  let (ut2, stmts2) = execRWS (liftTopStmts mpart (locals `union` localDefs stmts) stmts) () ut1
-  RWS.put ut2
+  ((), stmts2) <- interceptAW (liftTopStmts mpart (locals `union` localDefs stmts) stmts)
   splitBody stmts2
 
 splitBody :: [TopStmt] -> LiftState [BodyStmt]
