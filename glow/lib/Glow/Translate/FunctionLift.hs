@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module Glow.Translate.FunctionLift where
 
@@ -7,6 +8,8 @@ import Control.Monad.State (State, runState)
 import qualified Control.Monad.State as State (get, put)
 import Control.Monad.Trans.RWS.CPS (RWS, execRWS, tell, listen, censor)
 import qualified Control.Monad.Trans.RWS.CPS as RWS (state)
+import Data.DList (DList)
+import qualified Data.DList as DList (toList, fromList)
 import Data.Set (Set, union, unions, intersection, (\\))
 import qualified Data.Set as Set (fromList, toAscList, empty, singleton)
 import qualified Data.Map.Strict as Map
@@ -28,7 +31,7 @@ import Glow.Prelude
 -- even if those functions can be lifted later without
 -- captures.
 
-type LiftState a = RWS () [TopStmt] UnusedTable a
+type LiftState a = RWS () (DList TopStmt) UnusedTable a
 
 rwSA :: State s a -> RWS r w s a
 -- RWS runState
@@ -51,7 +54,7 @@ functionLift :: [GGT.AnfStatement] -> State UnusedTable Module
 -- TODO: if the Module type changes to use a Map of top-level functions,
 --       the functions should be filtered and collected into the Map here
 functionLift s =
-  Module <$> srWS (liftTopStmts Nothing Set.empty s)
+  Module . DList.toList <$> srWS (liftTopStmts Nothing Set.empty s)
 
 liftTopStmts ::  Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState ()
 liftTopStmts mpart locals = traverse_ (liftTopStmt mpart locals)
@@ -81,7 +84,7 @@ liftTopStmt mpart locals = \case
   GGT.DefineType f xs b -> tell [TsDefType f xs b]
   GGT.DefineDatatype f xs vs -> tell [TsDefData f xs vs]
   -- cases for BodyStmt
-  GGT.Publish p xs -> tell [TsBodyStmt (BsPublish p x) | x <- xs]
+  GGT.Publish p xs -> tell (DList.fromList [TsBodyStmt (BsPublish p x) | x <- xs])
   GGT.Deposit p am -> tell [TsBodyStmt (BsDeposit p am)]
   GGT.Withdraw p am -> tell [TsBodyStmt (BsWithdraw p am)]
   GGT.Switch a cs -> 
@@ -106,7 +109,7 @@ liftTopStmt mpart locals = \case
 liftBodyStmts :: Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [BodyStmt]
 liftBodyStmts mpart locals stmts = do
   ((), stmts2) <- interceptAW (liftTopStmts mpart (locals `union` localDefs stmts) stmts)
-  splitBody stmts2
+  splitBody (DList.toList stmts2)
 
 splitBody :: [TopStmt] -> LiftState [BodyStmt]
 splitBody = concatMapM splitBody1
