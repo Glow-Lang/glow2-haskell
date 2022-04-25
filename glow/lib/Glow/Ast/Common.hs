@@ -23,6 +23,8 @@ data Constant
   | CUnit
   deriving (Show, Read, Eq)
 
+-- | A trivial expression, an immediate argument expression in A-Normal Form.
+--   No side-effects, safe to repeat references in code generation.
 data TrivExpr
   = TrexVar Id
   | TrexConst Constant
