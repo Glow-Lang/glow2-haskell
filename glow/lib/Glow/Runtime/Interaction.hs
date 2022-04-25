@@ -1,6 +1,6 @@
 module Glow.Runtime.Interaction where
 
-import qualified Data.Map.Strict as M
+import Data.Map.Strict (Map)
 import Glow.Prelude
 
 -- | A message sent to a consensus, with value type @d@ and participant
@@ -11,7 +11,7 @@ data Message p d = Message
     -- | Differences in balances for each participant induced by
     -- this message. TODO: maybe make this more abstract, to
     -- support multiple assets, NFTs, etc.
-    messageAssetTransfers :: M.Map p Integer
+    messageAssetTransfers :: Map p Integer
   }
   deriving (Show, Eq)
 

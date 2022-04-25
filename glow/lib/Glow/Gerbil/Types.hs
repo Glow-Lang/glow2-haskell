@@ -6,63 +6,66 @@
 module Glow.Gerbil.Types where
 
 import Data.ByteString (ByteString)
-import qualified Data.Map.Strict as M
+import Data.Map.Strict (Map)
 import GHC.Generics hiding (Datatype)
+import Glow.Ast.Common (Id, Constant, TrivExpr)
 import Glow.Prelude
 
 -- TODO: variable cleanup, only keep live variables between each transaction
-type GlowProjectContract = M.Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)
+type GlowProjectContract = Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)
 
-type VariableMap = M.Map ByteString GlowValue
+type VariableMap = Map Id GlowValue
 
-type ProjectFunctionMap = M.Map ByteString (ByteString, [ProjectStatement])
+type DatatypeMap = Map Id [(Id, Integer)]
 
-type DatatypeMap = M.Map ByteString [(ByteString, Integer)]
+type AssetMap = Record TrivExpr
 
-type AssetMap = M.Map ByteString GlowValueRef
+type ExecutionPoint = Id
 
-type ProjectFunction = (ByteString, [ProjectStatement])
-
-type ExecutionPoint = ByteString
+type Record val = Map Id val
 
 -- | An MLsub type, as emitted by the frontend.
 data Type
   = TyArrow [Type] Type
-  | TyName ByteString
-  | TyNameSubtype ByteString Type
+  | TyName Id
+  | TyNameSubtype Id Type
   | TyTuple [Type]
-  | TyVar ByteString
+  | TyVar Id
   | TyApp Type [Type]
-  | TyRecord (M.Map ByteString Type)
+  | TyRecord (Record Type)
   | -- | TyUnknown is a placeholder until we actually support parsing everything;
     -- it is convienient to be able print out a larger type which has un-parsable
     -- bits, so we can see what of a program we handle and what we don't.
     TyUnknown ByteString
-  deriving (Eq, Show)
+  deriving (Eq, Read, Show)
 
 -- TODO: support lambdas with CPS
 data Statement interactionDef
-  = Label ByteString
-  | DebugLabel ByteString
-  | DefineInteraction ByteString interactionDef
-  | Define ByteString Expression
-  | DefineFunction ByteString [ByteString] [(Statement interactionDef)]
-  | DefineDatatype ByteString [(ByteString, Integer)]
-  | AtParticipant GlowValueRef (Statement interactionDef)
-  | SetParticipant GlowValueRef
-  | Publish GlowValueRef [GlowValueRef]
-  | Deposit GlowValueRef AssetMap
-  | Withdraw GlowValueRef AssetMap
+  = Label Id
+  | DebugLabel Id
+  | DefineInteraction Id interactionDef
+  | Define Id Expression
+  | DefineFunction Id [Id] [(Statement interactionDef)]
+  | -- Note: in the grammar there are both (deftype id type) and
+    -- (deftype (id tyvar ...) type); here we just combine them, where the
+    -- first variant has an empty list (likewise for defdata).
+    DefineType Id [Id] Type
+  | DefineDatatype Id [Id] [Variant]
+  | AtParticipant Id (Statement interactionDef)
+  | SetParticipant Id
+  | Publish Id [Id]
+  | Deposit Id AssetMap
+  | Withdraw Id AssetMap
   | Ignore Expression
-  | Require GlowValueRef
+  | Require TrivExpr
   | Return Expression
-  | Switch GlowValueRef [(Pattern, [(Statement interactionDef)])]
+  | Switch TrivExpr [(Pat, [(Statement interactionDef)])]
   deriving stock (Generic, Eq, Show)
 
 data AnfInteractionDef = AnfInteractionDef
-  { aidParticipantNames :: [ByteString],
-    aidAssetNames :: [ByteString],
-    aidArgumentNames :: [ByteString],
+  { aidParticipantNames :: [Id],
+    aidAssetNames :: [Id],
+    aidArgumentNames :: [Id],
     aidBody :: [AnfStatement]
   }
   deriving stock (Generic, Eq, Show)
@@ -70,33 +73,30 @@ data AnfInteractionDef = AnfInteractionDef
 type AnfStatement = Statement AnfInteractionDef
 
 data ProjectInteractionDef = ProjectInteractionDef
-  { pidParticipantNames :: [ByteString],
-    pidAssetNames :: [ByteString],
-    pidArgumentNames :: [ByteString],
-    pidInteractions :: [(ByteString, [ProjectStatement])]
+  { pidParticipantNames :: [Id],
+    pidAssetNames :: [Id],
+    pidArgumentNames :: [Id],
+    pidInteractions :: [(Maybe Id, [ProjectStatement])]
   }
   deriving stock (Generic, Eq, Show)
 
 type ProjectStatement = Statement ProjectInteractionDef
 
-data Expression
-  = ExpectPublished ByteString
-  | Digest [GlowValueRef]
-  | Sign GlowValueRef
-  | Input Type GlowValueRef
-  | EqlExpr GlowValueRef GlowValueRef
-  | AppExpr GlowValueRef [GlowValueRef]
-  | TrvExpr GlowValueRef
-  deriving stock (Generic, Eq, Show)
+data Variant = Variant Id [Type]
+  deriving stock (Generic, Show, Read, Eq)
 
--- TODO: how to encode expected type?
-data GlowValueRef
-  = Explicit GlowValue
-  | Variable ByteString
+data Expression
+  = ExpectPublished Id
+  | Digest [TrivExpr]
+  | Sign TrivExpr
+  | Input Type TrivExpr
+  | EqlExpr TrivExpr TrivExpr
+  | AppExpr TrivExpr [TrivExpr]
+  | TrvExpr TrivExpr
   deriving stock (Generic, Eq, Show)
 
 data GlowValue
-  = Constructor ByteString Integer [GlowValue]
+  = Constructor Id Integer [GlowValue]
   | PubKey LedgerPubKey
   | Signature LedgerSignature
   | ByteString ByteString
@@ -105,10 +105,17 @@ data GlowValue
   | Unit
   deriving stock (Generic, Eq, Show)
 
-data Pattern
-  = VarPat ByteString
-  | ValPat GlowValue
-  deriving stock (Generic, Eq, Show)
+data Pat
+  = PTypeAnno Pat Type
+  | PVar Id
+  | PAppCtor Id [Pat]
+  | PWild
+  | PList [Pat]
+  | PTuple [Pat]
+  | PRecord (Record Pat)
+  | POr [Pat]
+  | PConst Constant
+  deriving (Show, Read, Eq)
 
 newtype LedgerPubKey = LedgerPubKey ByteString
   deriving stock (Generic, Eq, Show)

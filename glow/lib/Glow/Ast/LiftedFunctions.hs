@@ -1,17 +1,8 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Glow.Ast.LiftedFunctions where
 
-import qualified Data.ByteString as BS
-import qualified Data.Map.Strict as M
 import Glow.Ast.Common
+import Glow.Gerbil.Types (Record, Type, Variant, Pat)
 import Glow.Prelude
-
-newtype Id = Id BS.ByteString
-  deriving (Show, Read, Eq, Ord, IsString)
-
-newtype TypeVar = TypeVar Id
-  deriving (Show, Read, Eq, Ord)
 
 data Module = Module [TopStmt]
   deriving (Show, Read, Eq)
@@ -21,8 +12,8 @@ data TopStmt
   | -- Note: in the grammar there are both (deftype id type) and
     -- (deftype (id tyvar ...) type); here we just combine them, where the
     -- first variant has an empty list (likewise for defdata).
-    TsDefType Id [TypeVar] Type
-  | TsDefData Id [TypeVar] [Variant]
+    TsDefType Id [Id] Type
+  | TsDefData Id [Id] [Variant]
   | TsDefInteraction Id InteractionDef
   | -- | participant id (if any), function id, function def:
     TsDefLambda (Maybe Id) Id (Lambda BodyStmt)
@@ -38,8 +29,8 @@ data InteractionDef = InteractionDef
 
 data BodyStmt
   = BsPartStmt (Maybe Id) PartStmt
-  | BsWithdraw Id (Record ArgExpr)
-  | BsDeposit Id (Record ArgExpr)
+  | BsWithdraw Id (Record TrivExpr)
+  | BsDeposit Id (Record TrivExpr)
   | BsPublish Id Id
   | BsSwitch (Switch BodyStmt)
   deriving (Show, Read, Eq)
@@ -50,37 +41,31 @@ data PartStmt
   | PsDef Id Expr
   | PsIgnore Expr
   | PsReturn Expr
-  | PsRequire ArgExpr
-  | PsAssert ArgExpr
+  | PsRequire TrivExpr
+  | PsAssert TrivExpr
   | PsSwitch (Switch PartStmt)
   deriving (Show, Read, Eq)
 
 data Switch stmt = Switch
-  { swArg :: ArgExpr,
+  { swArg :: TrivExpr,
     swBranches :: [(Pat, [stmt])]
   }
   deriving (Show, Read, Eq)
 
-data Variant = Variant Id [Type]
-  deriving (Show, Read, Eq)
-
 data Expr
-  = ExArg ArgExpr
-  | ExDot ArgExpr Id
-  | ExList [ArgExpr]
-  | ExTuple [ArgExpr]
-  | ExRecord (Record ArgExpr)
+  = ExTriv TrivExpr
+  | ExDot TrivExpr Id
+  | ExList [TrivExpr]
+  | ExTuple [TrivExpr]
+  | ExRecord (Record TrivExpr)
   | -- | Probably obvious suggestion: maybe generalize this to other binary operators?
-    ExEq ArgExpr ArgExpr
-  | ExInput Type ArgExpr
+    ExEq TrivExpr TrivExpr
+  | ExInput Type TrivExpr
   | -- | Question: can digest actually take multiple arguments? What does that do?
-    ExDigest [ArgExpr]
-  | ExSign ArgExpr
-  | ExCapture ArgExpr [ArgExpr]
-  | ExApp ArgExpr [ArgExpr]
-  deriving (Show, Read, Eq)
-
-newtype Record val = Record (M.Map Id val)
+    ExDigest [TrivExpr]
+  | ExSign TrivExpr
+  | ExCapture TrivExpr [TrivExpr]
+  | ExApp TrivExpr [TrivExpr]
   deriving (Show, Read, Eq)
 
 data Lambda stmt = Lambda
@@ -91,29 +76,3 @@ data Lambda stmt = Lambda
   }
   deriving (Show, Read, Eq)
 
-data ArgExpr
-  = AEVar Id
-  | AEConst Constant
-  | AEEmptyTuple
-  deriving (Show, Read, Eq)
-
-data Pat
-  = PTypeAnno Pat Type
-  | PVar Id
-  | PAppCtor Id [Pat]
-  | PWild
-  | PList [Pat]
-  | PTuple [Pat]
-  | PRecord (Record Pat)
-  | POr [Pat]
-  | PConst Constant
-  deriving (Show, Read, Eq)
-
-data Type
-  = TyId Id [Type] -- both id and (id type ...)
-  | TyInt IntType
-  | TyVar TypeVar
-  | TyTuple [Type]
-  | TyRecord (Record Type)
-  | TyFunc [Type] Type
-  deriving (Show, Read, Eq)

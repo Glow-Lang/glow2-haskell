@@ -17,7 +17,7 @@ module Glow.StateChannel where
 
 import Control.Concurrent.Classy
 import Data.Kind (Type)
-import qualified Data.Map.Strict as M
+import qualified Data.Map.Strict as Map
 import qualified Glow.Consensus.StateChannel as SC
 import Glow.Prelude
 import Glow.Runtime.Interaction
@@ -73,13 +73,13 @@ wrapHandle wh =
                         { SC.proposeVersion = SC.stateVersion (whsState s) + 1,
                           SC.proposeState = newState
                         },
-                    SC.agreeProofs = M.empty -- TODO
+                    SC.agreeProofs = Map.empty -- TODO
                   }
             submit
               (whHandle wh)
               Message
                 { messageData = SC.SCMAgreement agreement,
-                  messageAssetTransfers = M.empty
+                  messageAssetTransfers = Map.empty
                 },
       listenNext = do
         -- TODO:

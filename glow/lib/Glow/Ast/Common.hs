@@ -1,12 +1,14 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 -- | This module defines Ast nodes that appear in more than one Ast/IR.
 module Glow.Ast.Common where
 
 import qualified Data.ByteString as BS
 import Glow.Prelude
 
--- | A variable
-newtype Var = Var BS.ByteString
-  deriving (Show, Read, Eq, Ord)
+-- | An identifier or variable
+newtype Id = Id { idBS :: BS.ByteString }
+  deriving (Show, Read, Eq, Ord, IsString)
 
 data IntType = IntType
   { itSigned :: !Bool,
@@ -18,6 +20,14 @@ data Constant
   = CBool !Bool
   | CByteString !BS.ByteString
   | CInt IntType !Integer
+  | CUnit
+  deriving (Show, Read, Eq)
+
+-- | A trivial expression, an immediate argument expression in A-Normal Form.
+--   No side-effects, safe to repeat references in code generation.
+data TrivExpr
+  = TrexVar Id
+  | TrexConst Constant
   deriving (Show, Read, Eq)
 
 cInteger :: Integer -> Constant

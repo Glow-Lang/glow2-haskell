@@ -1,6 +1,6 @@
 module Glow.Ast.LowLevel where
 
-import qualified Data.Map.Strict as M
+import Data.Map.Strict (Map)
 import qualified Data.Set as S
 import qualified Data.Text.Lazy as LT
 import Glow.Ast.Common
@@ -16,7 +16,7 @@ data Program a = Program
     -- | Name of a function run *before* the entry point, responsible for initializing
     -- global variables:
     pInitFn :: Name,
-    pDefs :: M.Map Name (Definition a)
+    pDefs :: Map Name (Definition a)
   }
   deriving (Show, Read, Eq)
 
@@ -39,16 +39,16 @@ data VarProperty
 data FuncDef a = FuncDef
   { fdParams :: ParamList a,
     fdResult :: Result a,
-    fdBlocks :: M.Map Name (Block a),
+    fdBlocks :: Map Name (Block a),
     fdStartBlock :: Name
   }
   deriving (Show, Read, Eq)
 
-type Param a = (Var, Type a)
+type Param a = (Id, Type a)
 
-type ParamList a = [(Var, Type a)]
+type ParamList a = [(Id, Type a)]
 
-type Result a = (Var, Type a)
+type Result a = (Id, Type a)
 
 data Type a
   = TyFunc a [Type a] (Type a)
@@ -67,7 +67,7 @@ data Block a = Block
   deriving (Show, Read, Eq)
 
 data Stmt a
-  = StLet a Var (ValueStmt a)
+  = StLet a Id (ValueStmt a)
   | StIgnore a (VoidStmt a)
   deriving (Show, Read, Eq)
 
@@ -105,7 +105,7 @@ data JumpTarget a = JumpTarget
   deriving (Show, Read, Eq)
 
 data Expr a
-  = ExVar a Var
+  = ExVar a Id
   | ExConst a Constant
   | ExFuncPtr a Name
   | ExApplyOp a (Op a) [Expr a]

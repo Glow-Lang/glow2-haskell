@@ -17,14 +17,14 @@
 --   depending on the target.
 module Glow.Ast.HighLevel where
 
-import qualified Data.Map.Strict as M
+import Data.Map.Strict (Map)
 import Glow.Ast.Common
 import Glow.Prelude
 
 data Program a = Program
-  { progFuncs :: M.Map Var (Lambda a),
+  { progFuncs :: Map Id (Lambda a),
     -- | Name of entry point in progFuncs.
-    progMain :: Var
+    progMain :: Id
   }
 
 data Type a
@@ -53,8 +53,8 @@ data EffType
   deriving (Show, Read, Eq, Enum, Bounded)
 
 data Expr a
-  = ExLet a Var (Expr a) (Expr a)
-  | ExApply a Var [Var]
+  = ExLet a Id (Expr a) (Expr a)
+  | ExApply a Id [Id]
   | -- | Lift an "less-effectful" computation into a "more effectful" one.
     ExLift a (Expr a)
   | ExEffOp a (EffOp a)
@@ -62,12 +62,12 @@ data Expr a
   | ExBuiltin a Builtin
   | -- | Construct a closure from a lambda (with explicit capture list) and
     -- a set of values for the captured variables.
-    ExCapture a Var [Var]
+    ExCapture a Id [Id]
   deriving (Show, Read, Eq)
 
 data Lambda a = Lambda
-  { lamCaptures :: [(Var, Type a)],
-    lamParams :: [(Var, Type a)],
+  { lamCaptures :: [(Id, Type a)],
+    lamParams :: [(Id, Type a)],
     lamReturnType :: Type a,
     lamEffectType :: EffType,
     lamBody :: Expr a
@@ -94,9 +94,9 @@ effOpType = \case
 
 data EffOp a
   = EffGetParticipant a
-  | EffSetParticipant a Var
-  | EffDeposit a Var
-  | EffWithdraw a Var Var
-  | EffRequire a Var
+  | EffSetParticipant a Id
+  | EffDeposit a Id
+  | EffWithdraw a Id Id
+  | EffRequire a Id
   -- TODO: fill out any other effects.
   deriving (Show, Read, Eq)
