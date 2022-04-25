@@ -22,13 +22,13 @@ type BSN = (ByteString, Maybe Natural)
 
 {- |
 An 'UnusedNats' is one of:
- - @Nothing@
+
+ - @Nothing@ means everything is available including the non-suffixed name.
  - @Just (list :: [Natural], onward :: Natural)@
-Where the nats in the @list@ are in ascending order,
-and the @onward@ nat is greater than everything in the @list@.
-@Nothing@ means everything is available including the non-suffixed name.
-@Just (list, onward)@ means the nats in @list@ are available and everything
-from @onward@ onward is available.
+   where the nats in the @list@ are in ascending order,
+   and the @onward@ nat is greater than everything in the @list@,
+   means the nats in @list@ are available and everything
+   from @onward@ onward is available.
 
 Example: If the numbers 4, 6, and 7 are used, then the 'UnusedNats' are
 represented as @Just ([0, 1, 2, 3, 5], 8)@.
@@ -38,7 +38,7 @@ type UnusedNats = Maybe ([Natural], Natural)
 {- |
 An 'UnusedTable' is a map from non-prefixed names to 'UnusedNats'.
 The actual unused names can be represented as 'BSN' pairs made from
-each key and their associated unused nats.
+each of the keys and their associated unused nats.
 
 Example: If the names @a1@, @a4@, and @m8@ are used, then the 'UnusedTable' is
 @Map.fromList ([("a", Just ([0, 2, 3], 5)), ("m", Just ([0..7], 9))])@.
@@ -78,9 +78,13 @@ Uses up the possible nat suffix from the 'UnusedNats', producing
 that suffix if unused, or the first unused suffix otherwise.
 
 Examples:
+
 @'useUnused' (Just 1) Nothing@ produces @(Just 1, Just ([0], 2))@,
+
 @'useUnused' (Just 1) (Just ([0], 2))@ produces @(Just 0, Just ([], 2))@,
+
 @'useUnused' (Just 1) (Just ([], 2))@ produces @(Just 2, Just ([], 3))@,
+
 and so on.
 -}
 useUnused :: Maybe Natural -> UnusedNats -> (Maybe Natural, UnusedNats)
