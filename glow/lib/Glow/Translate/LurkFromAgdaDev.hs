@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wall #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Glow.Translate.LurkFromAgdaDev where
 
@@ -18,7 +19,29 @@ import qualified Glow.Ast.Targets.Lurk as O
 
 import Prelude (read)
 
+import Text.Read (readMaybe)
+
 import Glow.Translate.LurkToSExpr
+import Control.Lens (makeLenses)
+
+
+type ParticipantId = Int
+
+data GLType = GLNatT | GLBoolT | GLPFT | DigestT | GLUnitT 
+  deriving (Show , Read , Eq)
+
+
+data GLValue = GLNat Int | GLBool Bool | GLPF Int | DigestOf GLValue | GLUnit 
+  deriving (Show , Read , Eq)
+
+prettyGLValue :: GLValue -> String 
+prettyGLValue = \case
+  GLNat k -> show k
+  GLBool k -> show k
+  GLPF k -> show k L.++ "(PF)"
+  DigestOf x -> "dig(" L.++ (prettyGLValue x) L.++  ")" 
+  GLUnit -> "()" 
+
 
 data AList a = ALn | ALc a (AList a)
   deriving (Show, Read, Eq, Ord, Functor)
@@ -47,17 +70,12 @@ data Expr a
   | ExQuotedName a String  
   deriving (Show, Read, Eq)
 
--- | A let binding. Wether this is a @let@ or a @letrec@ depends on
--- in which constructor of 'Expr' it is contained.
+
 data Let a = LetC (AList (Binding a)) (Expr a)
   deriving (Show, Read, Eq)
 
 -- | A binding, as in a let expression.
 data Binding a = BindingC a Symbol (Expr a)
-  -- { bInfo :: a,
-  --   bKey :: Symbol,
-  --   bVal :: Expr a
-  -- }
   deriving (Show, Read, Eq)
 
 -- | A variable
@@ -69,7 +87,53 @@ data TU = TU
   deriving (Show, Read, Eq, Ord)
 
 
--- test2 = ExLambda TU (ALc (SymbolC "d1") (ALc (SymbolC "d2") ALn)) (ExBinary TU O.BOpCons (ExSymbol TU (SymbolC "d")) (ExSymbol TU (SymbolC "b")))
+data GLContainerC = GLContainerC (AList String) (Expr TU) (AList (String , String))
+  deriving (Show, Read, Eq)
+
+data GLContainer = GLContainer ([String]) FilePath ([(String , GLType)])
+  deriving (Show, Read, Eq)
+
+
+
+data Action =
+    Withdraw Int
+  | Deposit Int
+  | Publish GLValue
+ deriving (Show , Read)
+
+
+data CallC = CallC
+  Int
+  ParticipantId
+  Action
+  
+ deriving (Show , Read)
+
+data Call = Call
+  { _desiredStateId :: Int
+  , _caller :: ParticipantId
+  , _action :: Action
+  }
+ deriving (Show , Read)
+makeLenses ''Call
+
+
+
+data GLInteractionTestC =
+   GLInteractionTestC GLContainerC (AList (String , GLValue)) (AList CallC)
+   deriving (Show, Read)
+
+data GLInteractionTest =
+   GLInteractionTest
+   { _contract :: GLContainer
+   , _parameters :: [(String , GLValue)]
+   , _calls :: [Call]
+   }
+   deriving (Show, Read)
+makeLenses ''GLInteractionTest
+
+fromGLInteractionTestC :: GLInteractionTestC -> GLInteractionTest
+fromGLInteractionTestC = undefined
 
 
 toOriginalS :: Symbol -> O.Symbol
@@ -82,6 +146,39 @@ toOriginalL :: Let a -> O.Let a
 toOriginalL (LetC x y) = O.Let (fmap toOriginalB (toList x)) (toOriginal y)
 
 
+interationLibHead :: String
+interationLibHead = "(let ((glow-code "
+
+interationLibFooter :: String
+interationLibFooter = "))(current-env))"
+
+
+
+-- TODO :: intorduce relevant Typeclass, to avoid repettion here
+fromRawContainer :: FilePath -> GLContainerC -> IO GLContainer
+fromRawContainer fName (GLContainerC x y z) = do
+   writeFile fName $ interationLibHead L.++ (render (translateExpr (toOriginal y))) L.++ interationLibFooter 
+   pure $ GLContainer
+     (toList x)
+     fName
+     (L.map (\(nm , tS ) ->
+             (nm , case tS of
+                        "Nat" -> GLNatT
+                        "Bool" -> GLBoolT
+                        _ -> GLUnitT
+
+             ))
+       (toList z))  
+
+fromRawInteractionTest :: FilePath -> GLInteractionTestC -> IO GLInteractionTest
+fromRawInteractionTest fName (GLInteractionTestC x y z) = do
+  c <- fromRawContainer fName x
+  pure $
+    GLInteractionTest c (toList y) (fmap (\(CallC x' y' z') -> Call x' y' z') $ toList z) 
+    
+  
+
+  
 toOriginal :: Expr a -> O.Expr a
 toOriginal = \case
   ExT x -> O.ExT x
@@ -107,10 +204,10 @@ toOriginal = \case
 
   -- _ -> undefined
 
-render :: SExpr -> Text
+render :: SExpr -> String
 render = \case
-  S.Atom x -> pack x
-  S.List x -> "(" <> (intercalate " " (render <$> x)) <> ")"
+  S.Atom x -> x
+  S.List x -> "(" L.++ (L.intercalate " " (render <$> x)) L.++ ")"
   _ -> "not implemented"
   --ConsList
   -- Number x -> pack (show x)
@@ -119,7 +216,45 @@ render = \case
 translateAndPrintLurkCode :: Expr TU -> IO ()
 translateAndPrintLurkCode x = do
   let y = translateExpr (toOriginal x)
-  putStrLn (unpack (render y))
+  putStrLn (render y)
+
+
+pickContainerFromAgdaFile :: String -> IO  (GLContainer)
+pickContainerFromAgdaFile valLabel = do
+  af <- TIO.readFile "/Users/Marcin/glow/agda/Glow/Simple/Lurk/ControlFlowTrans.agda"
+  case L.take 2 $ T.splitOn ("labeledValue[ \"" <> (T.pack valLabel) <> "\" ][") af of
+    [ _ , x] -> do
+       case L.take 2 $ T.splitOn "]labeledValueEnd" x of
+          [ x' , _] -> do
+             let z' = unpack $ replace "Expr." "" x'
+             case readMaybe z' of
+               Nothing -> do
+                    putStrLn $ z'
+                    error "error: Malformed Expression!"
+                             
+               Just xx -> (fromRawContainer ("/Users/Marcin/lurk-code/" L.++ valLabel L.++ ".lurk") xx)
+          y ->  error $ ("endFailed ") L.++ (show $ L.length y)
+                  
+    y -> error $ show $ L.length y
+
+pickTestCaseFromAgdaFile :: String -> IO  (GLInteractionTest)
+pickTestCaseFromAgdaFile valLabel = do
+  af <- TIO.readFile "/Users/Marcin/glow/agda/Glow/Simple/Lurk/ControlFlowTrans.agda"
+  case L.take 2 $ T.splitOn ("labeledValue[ \"" <> (T.pack valLabel) <> "\" ][") af of
+    [ _ , x] -> do
+       case L.take 2 $ T.splitOn "]labeledValueEnd" x of
+          [ x' , _] -> do
+             let z' = unpack $ replace "Expr." "" x'
+             case readMaybe z' of
+               Nothing -> do
+                    putStrLn $ z'
+                    error "error: Malformed GLInteractionTest Expression!"
+                             
+               Just xx -> (fromRawInteractionTest ("/Users/Marcin/lurk-code/" L.++ valLabel L.++ ".lurk") xx)
+          y ->  error $ ("endFailed ") L.++ (show $ L.length y)
+                  
+    y -> error $ show $ L.length y
+
 
 
 pickFromAgdaFile :: String -> IO () 
@@ -168,213 +303,3 @@ readFromAgdaProcess = do
          else putStrLn "skip.."
        loop
 
-
-
-
-       -- ~/glow2-haskell/dist-newstyle/build/x86_64-osx/ghc-8.10.6/glow-0.1.0.0/x/lurk-from-agda/build/lurk-from-agda/lurk-from-agda
-
-
--- echo "IOTCM \"IOHaskellInterface.agda\" None Indirect (Cmd_compute_toplevel DefaultCompute \"test2\")" | agda --interaction | ~/glow2-haskell/dist-newstyle/build/x86_64-osx/ghc-8.10.6/glow-0.1.0.0/x/lurk-from-agda/build/lurk-from-agda/lurk-from-agda
-
-
--- ExLambda TU
--- (ALc (SymbolC "wagerAmount") (ALc (SymbolC "escrowAmount") ALn))
--- (ExApply TU (ExSymbol TU (SymbolC "bind"))
---  (ALc
---   (ExApply TU (ExSymbol TU (SymbolC "publish"))
---    (ALc (ExFieldElem TU 0) (ALc (ExFieldElem TU 0) ALn)))
---   (ALc
---    (ExLambda TU (ALc (SymbolC "commitment") ALn)
---     (ExApply TU (ExSymbol TU (SymbolC "next"))
---      (ALc
---       (ExApply TU (ExSymbol TU (SymbolC "action"))
---        (ALc (ExFieldElem TU 1)
---         (ALc (ExFieldElem TU 0)
---          (ALc
---           (ExApply TU (ExSymbol TU (SymbolC "deposit"))
---            (ALc
---             (ExApply TU (ExSymbol TU (SymbolC "+ℕ"))
---              (ALc (ExSymbol TU (SymbolC "wagerAmount"))
---               (ALc (ExSymbol TU (SymbolC "escrowAmount")) ALn)))
---             ALn))
---           ALn))))
---       (ALc
---        (ExApply TU (ExSymbol TU (SymbolC "bind"))
---         (ALc
---          (ExApply TU (ExSymbol TU (SymbolC "publish"))
---           (ALc (ExFieldElem TU 2) (ALc (ExFieldElem TU 1) ALn)))
---          (ALc
---           (ExLambda TU (ALc (SymbolC "randB") ALn)
---            (ExApply TU (ExSymbol TU (SymbolC "next"))
---             (ALc
---              (ExApply TU (ExSymbol TU (SymbolC "action"))
---               (ALc (ExFieldElem TU 3)
---                (ALc (ExFieldElem TU 1)
---                 (ALc
---                  (ExApply TU (ExSymbol TU (SymbolC "deposit"))
---                   (ALc (ExSymbol TU (SymbolC "wagerAmount")) ALn))
---                  ALn))))
---              (ALc
---               (ExApply TU (ExSymbol TU (SymbolC "bind"))
---                (ALc
---                 (ExApply TU (ExSymbol TU (SymbolC "publish"))
---                  (ALc (ExFieldElem TU 4) (ALc (ExFieldElem TU 0) ALn)))
---                 (ALc
---                  (ExLambda TU (ALc (SymbolC "randA") ALn)
---                   (ExApply TU (ExSymbol TU (SymbolC "bind"))
---                    (ALc
---                     (ExApply TU (ExSymbol TU (SymbolC "mk-pure"))
---                      (ALc
---                       (ExApply TU (ExSymbol TU (SymbolC "digestNat"))
---                        (ALc (ExSymbol TU (SymbolC "randA")) ALn))
---                       ALn))
---                     (ALc
---                      (ExLambda TU (ALc (SymbolC "mbCommitment") ALn)
---                       (ExApply TU (ExSymbol TU (SymbolC "next"))
---                        (ALc
---                         (ExApply TU (ExSymbol TU (SymbolC "require"))
---                          (ALc
---                           (ExApply TU (ExSymbol TU (SymbolC "==Digest"))
---                            (ALc (ExSymbol TU (SymbolC "commitment"))
---                             (ALc (ExSymbol TU (SymbolC "mbCommitment")) ALn)))
---                           ALn))
---                         (ALc
---                          (ExApply TU (ExSymbol TU (SymbolC "bind"))
---                           (ALc
---                            (ExApply TU (ExSymbol TU (SymbolC "mk-pure"))
---                             (ALc
---                              (ExApply TU (ExSymbol TU (SymbolC "^^^"))
---                               (ALc (ExSymbol TU (SymbolC "randA"))
---                                (ALc (ExSymbol TU (SymbolC "randB")) ALn)))
---                              ALn))
---                            (ALc
---                             (ExLambda TU (ALc (SymbolC "n0") ALn)
---                              (ExApply TU (ExSymbol TU (SymbolC "bind"))
---                               (ALc
---                                (ExApply TU (ExSymbol TU (SymbolC "mk-pure"))
---                                 (ALc
---                                  (ExApply TU (ExSymbol TU (SymbolC "&&&"))
---                                   (ALc (ExSymbol TU (SymbolC "n0"))
---                                    (ALc
---                                     (ExApply TU (ExSymbol TU (SymbolC "cons"))
---                                      (ALc (ExT TU) (ALc (ExNil TU) ALn)))
---                                     ALn)))
---                                  ALn))
---                                (ALc
---                                 (ExLambda TU (ALc (SymbolC "n1") ALn)
---                                  (ExApply TU (ExSymbol TU (SymbolC "next"))
---                                   (ALc
---                                    (ExApply TU (ExSymbol TU (SymbolC "next"))
---                                     (ALc
---                                      (ExIf TU
---                                       (ExApply TU (ExSymbol TU (SymbolC "==Nat"))
---                                        (ALc (ExSymbol TU (SymbolC "n1"))
---                                         (ALc (ExNil TU) ALn)))
---                                       (ExApply TU (ExSymbol TU (SymbolC "bind"))
---                                        (ALc
---                                         (ExApply TU (ExSymbol TU (SymbolC "mk-pure"))
---                                          (ALc
---                                           (ExApply TU (ExSymbol TU (SymbolC "*ℕ"))
---                                            (ALc
---                                             (ExApply TU (ExSymbol TU (SymbolC "cons"))
---                                              (ALc (ExNil TU)
---                                               (ALc
---                                                (ExApply TU (ExSymbol TU (SymbolC "cons"))
---                                                 (ALc (ExT TU) (ALc (ExNil TU) ALn)))
---                                                ALn)))
---                                             (ALc (ExSymbol TU (SymbolC "wagerAmount")) ALn)))
---                                           ALn))
---                                         (ALc
---                                          (ExLambda TU (ALc (SymbolC "w1") ALn)
---                                           (ExApply TU (ExSymbol TU (SymbolC "bind"))
---                                            (ALc
---                                             (ExApply TU (ExSymbol TU (SymbolC "mk-pure"))
---                                              (ALc
---                                               (ExApply TU (ExSymbol TU (SymbolC "+ℕ"))
---                                                (ALc (ExSymbol TU (SymbolC "w1"))
---                                                 (ALc (ExSymbol TU (SymbolC "escrowAmount"))
---                                                  ALn)))
---                                               ALn))
---                                             (ALc
---                                              (ExLambda TU (ALc (SymbolC "w2") ALn)
---                                               (ExApply TU (ExSymbol TU (SymbolC "next"))
---                                                (ALc
---                                                 (ExApply TU
---                                                  (ExSymbol TU (SymbolC "action"))
---                                                  (ALc (ExFieldElem TU 5)
---                                                   (ALc (ExFieldElem TU 0)
---                                                    (ALc
---                                                     (ExApply TU
---                                                      (ExSymbol TU (SymbolC "withdraw"))
---                                                      (ALc (ExSymbol TU (SymbolC "w2")) ALn))
---                                                     ALn))))
---                                                 (ALc
---                                                  (ExApply TU
---                                                   (ExSymbol TU (SymbolC "mk-pure"))
---                                                   (ALc (ExQuotedName TU "glow-unit-lit") ALn))
---                                                  ALn))))
---                                              ALn))))
---                                          ALn)))
---                                       (ExApply TU (ExSymbol TU (SymbolC "bind"))
---                                        (ALc
---                                         (ExApply TU (ExSymbol TU (SymbolC "mk-pure"))
---                                          (ALc
---                                           (ExApply TU (ExSymbol TU (SymbolC "*ℕ"))
---                                            (ALc
---                                             (ExApply TU (ExSymbol TU (SymbolC "cons"))
---                                              (ALc (ExNil TU)
---                                               (ALc
---                                                (ExApply TU (ExSymbol TU (SymbolC "cons"))
---                                                 (ALc (ExT TU) (ALc (ExNil TU) ALn)))
---                                                ALn)))
---                                             (ALc (ExSymbol TU (SymbolC "wagerAmount")) ALn)))
---                                           ALn))
---                                         (ALc
---                                          (ExLambda TU (ALc (SymbolC "w1") ALn)
---                                           (ExApply TU (ExSymbol TU (SymbolC "next"))
---                                            (ALc
---                                             (ExApply TU (ExSymbol TU (SymbolC "action"))
---                                              (ALc (ExFieldElem TU 6)
---                                               (ALc (ExFieldElem TU 1)
---                                                (ALc
---                                                 (ExApply TU
---                                                  (ExSymbol TU (SymbolC "withdraw"))
---                                                  (ALc (ExSymbol TU (SymbolC "w1")) ALn))
---                                                 ALn))))
---                                             (ALc
---                                              (ExApply TU (ExSymbol TU (SymbolC "next"))
---                                               (ALc
---                                                (ExApply TU
---                                                 (ExSymbol TU (SymbolC "action"))
---                                                 (ALc (ExFieldElem TU 7)
---                                                  (ALc (ExFieldElem TU 0)
---                                                   (ALc
---                                                    (ExApply TU
---                                                     (ExSymbol TU (SymbolC "withdraw"))
---                                                     (ALc (ExSymbol TU (SymbolC "escrowAmount"))
---                                                      ALn))
---                                                    ALn))))
---                                                (ALc
---                                                 (ExApply TU
---                                                  (ExSymbol TU (SymbolC "mk-pure"))
---                                                  (ALc (ExQuotedName TU "glow-unit-lit") ALn))
---                                                 ALn)))
---                                              ALn))))
---                                          ALn))))
---                                      (ALc
---                                       (ExApply TU (ExSymbol TU (SymbolC "mk-pure"))
---                                        (ALc (ExQuotedName TU "glow-unit-lit") ALn))
---                                       ALn)))
---                                    (ALc
---                                     (ExApply TU (ExSymbol TU (SymbolC "mk-pure"))
---                                      (ALc (ExQuotedName TU "glow-unit-lit") ALn))
---                                     ALn))))
---                                 ALn))))
---                             ALn)))
---                          ALn))))
---                      ALn))))
---                  ALn)))
---               ALn))))
---           ALn)))
---        ALn))))
---    ALn)))
