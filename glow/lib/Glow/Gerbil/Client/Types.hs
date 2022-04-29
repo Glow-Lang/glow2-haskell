@@ -5,8 +5,9 @@
 module Glow.Gerbil.Client.Types where
 
 import Data.Aeson hiding (Value)
-import qualified Data.Map.Strict as M
+import Data.Map.Strict (Map)
 import GHC.Generics
+import Glow.Ast.Common (Id)
 import Glow.Gerbil.Types
 import Glow.Prelude
 
@@ -39,7 +40,7 @@ data RawMoveParams = RawMoveParams
 
 data CreateParams = CreateParams
   { datatypes :: DatatypeMap,
-    participants :: M.Map ByteString LedgerPubKey, -- TODO: type synonym for this
+    participants :: Map Id LedgerPubKey, -- TODO: type synonym for this
     arguments :: VariableMap,
     contract :: GlowProjectContract, -- consensus program
     timeoutLength :: Integer

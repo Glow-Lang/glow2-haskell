@@ -49,6 +49,9 @@ common shared-opts
     , base64-bytestring ^>=1.2.1
     , bytestring >=0.10.2 && <0.12
     , containers ^>=0.6.5
+    , dlist ^>=1.0
+    , extra ^>=1.7.10
+    , transformers ^>=0.5.6.2
     , zenhack-prelude ^>=0.1
     , text ^>=1.2.5
     , megaparsec >=6.5 && <9.3
@@ -72,22 +75,26 @@ library
   exposed-modules:
       Glow.Main
 
+    , Glow.Ast.Common
     , Glow.Ast.Surface
-    , Glow.Ast.LastLeg
+    , Glow.Ast.HighLevel
+    , Glow.Ast.LowLevel
+    , Glow.Ast.LiftedFunctions
     , Glow.Ast.Targets.Lurk
     , Glow.Parser
     , Glow.Prelude
     , Glow.Runtime.Interaction
     , Glow.Runtime.Interaction.STM
-    , Glow.Translate.GerbilTypeToLastLeg
     , Glow.Translate.LurkToSExpr
-    , Glow.Translate.LurkFromAgdaDev    
+    , Glow.Translate.LurkFromAgdaDev
+    , Glow.Translate.FunctionLift
     , Glow.Consensus.Local
     , Glow.Consensus.StateChannel
     , Glow.Consensus.LurkMock
     , Glow.StateChannel
 
     , Glow.Gerbil.Types
+    , Glow.Gerbil.Fresh
     , Glow.Gerbil.ParseAnf
     , Glow.Gerbil.ParseCommon
     , Glow.Gerbil.ParseProject
@@ -121,7 +128,9 @@ test-suite tests
   hs-source-dirs: tests
   main-is: Main.hs
   other-modules:
-      Tests.Parser
+      Tests.AstCommon
+    , Tests.Parser
     , Tests.Runtime.Interaction
+    , Tests.Fresh
+    , Tests.FunctionLift
     , Tests.Lurk
-    , Tests.TranslateType

@@ -1,7 +1,7 @@
 module Tests.Runtime.Interaction (tests) where
 
 import Control.Concurrent.Classy
-import qualified Data.Map.Strict as M
+import qualified Data.Map.Strict as Map
 import Glow.Prelude
 import Glow.Runtime.Interaction
 import Glow.Runtime.Interaction.STM
@@ -21,7 +21,7 @@ tests =
               h
               Message
                 { messageData = val,
-                  messageAssetTransfers = M.empty
+                  messageAssetTransfers = Map.empty
                 }
           r `dataShouldBe` val = messageData (mwpMessage r) `shouldBe` val
       describe "newHandle" $ do
@@ -53,7 +53,7 @@ tests =
                     mwpMessage =
                       Message
                         { messageData = v,
-                          messageAssetTransfers = M.empty
+                          messageAssetTransfers = Map.empty
                         }
                   }
               mwp0 = mkMwp h1 0

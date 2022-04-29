@@ -3,9 +3,11 @@
 
 module Glow.Gerbil.ParseCommon where
 
-import qualified Data.ByteString.Lazy.Char8 as LBS8
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as BS8
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Glow.Ast.Common (Id(..), Constant(..), TrivExpr(..), cInteger)
 import Glow.Gerbil.Types as Glow
 import Glow.Prelude
 import Text.SExpression as SExpr
@@ -26,32 +28,46 @@ parseTable p (List (Atom "hash" : kvs)) = Map.fromList $ mapMaybe (parseKV p) kv
 parseTable _ sexp = error $ "parseTable: S-expression is not a hash map: " <> show sexp
 
 parseKV :: (SExpr -> a) -> SExpr -> Maybe (ByteString, a)
-parseKV p (List [Atom k, v]) = Just (bs8pack k, p v)
+parseKV p (List [Atom k, v]) = Just (BS8.pack k, p v)
 parseKV _ (List [_, _]) = Nothing
 parseKV _ sexp = error $ "parseKV: S-expression is not a key-value pair: " <> show sexp
+
+parseQuoteId :: SExpr -> Id
+parseQuoteId (List [Atom "quote", Atom name]) = Id (BS8.pack name)
+parseQuoteId sexp = error $ "parseQuoteAtom: S-expression is not a quoted atom: " <> show sexp
 
 parseType :: SExpr -> Type
 parseType (List [Atom "type:arrow", List (Atom "@list" : params), result]) =
   TyArrow (map parseType params) (parseType result)
 parseType (List [Atom "type:name", List [Atom "quote", Atom name]]) =
-  TyName (bs8pack name)
+  TyName (Id (BS8.pack name))
 parseType (List [Atom "type:name-subtype", List [Atom "quote", Atom name], typ]) =
-  TyNameSubtype (bs8pack name) (parseType typ)
+  TyNameSubtype (Id (BS8.pack name)) (parseType typ)
 parseType (List [Atom "type:tuple", List (Atom "@list" : elts)]) =
   TyTuple (map parseType elts)
+parseType (List [Atom "type:var", List [Atom "quote", Atom name]]) =
+  TyVar (Id (BS8.pack name))
+parseType (List [Atom "type:app", fun, List (Atom "@list" : args)]) =
+  TyApp (parseType fun) (parseType <$> args)
+parseType (List [Atom "type:record", List (Atom "symdict" : entries)]) =
+  TyRecord (Map.fromList [(Id (BS8.pack k), parseType v) | List [Atom k, v] <- entries])
 parseType sexp =
-  TyUnknown (bs8pack $ show sexp)
+  TyUnknown (BS8.pack $ show sexp)
+
+parseVariant :: SExpr -> Variant
+parseVariant (List (Atom name : fields)) = Variant (Id (BS8.pack name)) (parseType <$> fields)
+parseVariant sexp = error $ "parseVariant: S-expression is not a datatype variant: " <> show sexp
 
 parseAssetMap :: [SExpr] -> AssetMap
 parseAssetMap = Map.fromList . map parseField
   where
-    parseField (Builtin name [Atom amountName]) = (bs8pack name, var amountName)
+    parseField (Builtin name [Atom amountName]) = (Id (BS8.pack name), var amountName)
     parseField field = error $ "Malformed field in asset map: " <> show field
 
 parseExpression :: SExpr -> Expression
 parseExpression = \case
   Builtin "expect-published" [Builtin "quote" [variableName]] ->
-    ExpectPublished (bs8pack $ parseName variableName)
+    ExpectPublished (Id (BS8.pack $ parseName variableName))
   Builtin "@app" (fun : args) ->
     AppExpr (parseTrivialExpression fun) (parseTrivialExpression <$> args)
   Builtin "==" [a, b] ->
@@ -69,14 +85,8 @@ parseExpression = \case
   unknown ->
     error $ "Unknown expression in contract body: " <> show unknown
 
-var :: String -> GlowValueRef
-var = Variable . bs8pack
-
-bs8pack :: String -> ByteString
-bs8pack = WrappedByteString . LBS8.pack
-
-bs8unpack :: ByteString -> String
-bs8unpack = LBS8.unpack . toLBS
+var :: String -> TrivExpr
+var = TrexVar . Id . BS8.pack
 
 parseName :: SExpr -> String
 parseName = \case
@@ -87,17 +97,18 @@ parseName = \case
   unknown ->
     error $ "Invalid name expression: " <> show unknown
 
-parseTrivialExpression :: SExpr -> GlowValueRef
+parseTrivialExpression :: SExpr -> TrivExpr
 parseTrivialExpression = \case
-  Atom name            -> var name
-  List [Atom "@tuple"] -> Explicit Unit
-  Number n             -> Explicit (Integer n)
-  String s             -> Explicit (ByteString (bs8pack s))
-  unknown              ->
+  Atom name -> var name
+  List [Atom "@tuple"] -> TrexConst CUnit
+  Bool b -> TrexConst (CBool b)
+  Number n -> TrexConst (cInteger n)
+  String s -> TrexConst (CByteString (BS8.pack s))
+  unknown ->
     error $ "Unknown expression in trivial-expression position: " <> show unknown
 
-parsePattern :: SExpr -> Pattern
+parsePattern :: SExpr -> Glow.Pat
 parsePattern = \case
-  Bool b   -> ValPat (Boolean b)
-  Number n -> ValPat (Integer n)
-  unknown  -> error $ "Unknown switch pattern: " <> show unknown
+  Bool b -> PConst (CBool b)
+  Number n -> PConst (cInteger n)
+  unknown -> error $ "Unknown switch pattern: " <> show unknown
