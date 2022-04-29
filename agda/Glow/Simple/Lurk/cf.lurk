@@ -1,0 +1,10 @@
+;-*-Lisp-*-
+
+
+
+(let
+    ((cf-code (lambda (wagerAmount escrowAmount) (bind (publish 1 0) (lambda (commitment) (next (action 2 0 (deposit (+ℕ wagerAmount escrowAmount))) (bind (publish 3 1) (lambda (randB) (next (action 4 1 (deposit wagerAmount)) (bind (publish 5 0) (lambda (randA) (bind (mk-pure (digestNat randA)) (lambda (mbCommitment) (next (require (==Digest commitment mbCommitment)) (bind (mk-pure (^^^ randA randB)) (lambda (n0) (bind (mk-pure (&&& n0 (cons t nil))) (lambda (n1) (next (next (if (==Nat n1 nil) (bind (mk-pure (*ℕ (cons nil (cons t nil)) wagerAmount)) (lambda (w1) (bind (mk-pure (+ℕ w1 escrowAmount)) (lambda (w2) (next (action 6 0 (withdraw w2)) (mk-pure (quote glow-unit-lit))))))) (bind (mk-pure (*ℕ (cons nil (cons t nil)) wagerAmount)) (lambda (w1) (next (action 7 1 (withdraw w1)) (next (action 8 0 (withdraw escrowAmount)) (mk-pure (quote glow-unit-lit))))))) (mk-pure (quote glow-unit-lit))) (mk-pure (quote glow-unit-lit))))))))))))))))))))
+     )
+  (current-env)
+  
+  )
