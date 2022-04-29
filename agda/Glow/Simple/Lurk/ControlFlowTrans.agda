@@ -550,4 +550,217 @@ module examplesAB where
                 ∷ []))
 
     zzT : LabeledValue[ "coinFlipPTest" ][ coinFlipTest ]
-    zzT = {!mkLV!}
+    zzT = labeledValue[ "coinFlipPTest" ][
+            GLInteractionTestC
+            (GLContainerC (ALc "A" (ALc "B" ALn))
+             (Expr.ExLambda TU
+              (ALc (SymbolC "wagerAmount") (ALc (SymbolC "escrowAmount") ALn))
+              (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "bind"))
+               (ALc
+                (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "publish"))
+                 (ALc (Expr.ExFieldElem TU 1) (ALc (Expr.ExFieldElem TU 0) ALn)))
+                (ALc
+                 (Expr.ExLambda TU (ALc (SymbolC "commitment") ALn)
+                  (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "next"))
+                   (ALc
+                    (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "action"))
+                     (ALc (Expr.ExFieldElem TU 2)
+                      (ALc (Expr.ExFieldElem TU 0)
+                       (ALc
+                        (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "deposit"))
+                         (ALc
+                          (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "+ℕ"))
+                           (ALc (Expr.ExSymbol TU (SymbolC "wagerAmount"))
+                            (ALc (Expr.ExSymbol TU (SymbolC "escrowAmount")) ALn)))
+                          ALn))
+                        ALn))))
+                    (ALc
+                     (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "bind"))
+                      (ALc
+                       (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "publish"))
+                        (ALc (Expr.ExFieldElem TU 3) (ALc (Expr.ExFieldElem TU 1) ALn)))
+                       (ALc
+                        (Expr.ExLambda TU (ALc (SymbolC "randB") ALn)
+                         (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "next"))
+                          (ALc
+                           (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "action"))
+                            (ALc (Expr.ExFieldElem TU 4)
+                             (ALc (Expr.ExFieldElem TU 1)
+                              (ALc
+                               (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "deposit"))
+                                (ALc (Expr.ExSymbol TU (SymbolC "wagerAmount")) ALn))
+                               ALn))))
+                           (ALc
+                            (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "bind"))
+                             (ALc
+                              (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "publish"))
+                               (ALc (Expr.ExFieldElem TU 5) (ALc (Expr.ExFieldElem TU 0) ALn)))
+                              (ALc
+                               (Expr.ExLambda TU (ALc (SymbolC "randA") ALn)
+                                (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "bind"))
+                                 (ALc
+                                  (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "pure"))
+                                   (ALc
+                                    (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "digestNat"))
+                                     (ALc (Expr.ExSymbol TU (SymbolC "randA")) ALn))
+                                    ALn))
+                                  (ALc
+                                   (Expr.ExLambda TU (ALc (SymbolC "mbCommitment") ALn)
+                                    (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "next"))
+                                     (ALc
+                                      (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "require"))
+                                       (ALc
+                                        (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "==Digest"))
+                                         (ALc (Expr.ExSymbol TU (SymbolC "commitment"))
+                                          (ALc (Expr.ExSymbol TU (SymbolC "mbCommitment")) ALn)))
+                                        ALn))
+                                      (ALc
+                                       (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "bind"))
+                                        (ALc
+                                         (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "pure"))
+                                          (ALc
+                                           (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "^^^"))
+                                            (ALc (Expr.ExSymbol TU (SymbolC "randA"))
+                                             (ALc (Expr.ExSymbol TU (SymbolC "randB")) ALn)))
+                                           ALn))
+                                         (ALc
+                                          (Expr.ExLambda TU (ALc (SymbolC "n0") ALn)
+                                           (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "bind"))
+                                            (ALc
+                                             (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "pure"))
+                                              (ALc
+                                               (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "&&&"))
+                                                (ALc (Expr.ExSymbol TU (SymbolC "n0"))
+                                                 (ALc
+                                                  (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "cons"))
+                                                   (ALc (Expr.ExT TU) (ALc (Expr.ExNil TU) ALn)))
+                                                  ALn)))
+                                               ALn))
+                                             (ALc
+                                              (Expr.ExLambda TU (ALc (SymbolC "n1") ALn)
+                                               (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "next"))
+                                                (ALc
+                                                 (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "next"))
+                                                  (ALc
+                                                   (Expr.ExIf TU
+                                                    (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "==Nat"))
+                                                     (ALc (Expr.ExSymbol TU (SymbolC "n1"))
+                                                      (ALc (Expr.ExNil TU) ALn)))
+                                                    (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "bind"))
+                                                     (ALc
+                                                      (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "pure"))
+                                                       (ALc
+                                                        (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "*ℕ"))
+                                                         (ALc
+                                                          (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "cons"))
+                                                           (ALc (Expr.ExNil TU)
+                                                            (ALc
+                                                             (Expr.ExApply TU
+                                                              (Expr.ExSymbol TU (SymbolC "cons"))
+                                                              (ALc (Expr.ExT TU) (ALc (Expr.ExNil TU) ALn)))
+                                                             ALn)))
+                                                          (ALc (Expr.ExSymbol TU (SymbolC "wagerAmount")) ALn)))
+                                                        ALn))
+                                                      (ALc
+                                                       (Expr.ExLambda TU (ALc (SymbolC "w1") ALn)
+                                                        (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "bind"))
+                                                         (ALc
+                                                          (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "pure"))
+                                                           (ALc
+                                                            (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "+ℕ"))
+                                                             (ALc (Expr.ExSymbol TU (SymbolC "w1"))
+                                                              (ALc (Expr.ExSymbol TU (SymbolC "escrowAmount"))
+                                                               ALn)))
+                                                            ALn))
+                                                          (ALc
+                                                           (Expr.ExLambda TU (ALc (SymbolC "w2") ALn)
+                                                            (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "next"))
+                                                             (ALc
+                                                              (Expr.ExApply TU
+                                                               (Expr.ExSymbol TU (SymbolC "action"))
+                                                               (ALc (Expr.ExFieldElem TU 6)
+                                                                (ALc (Expr.ExFieldElem TU 0)
+                                                                 (ALc
+                                                                  (Expr.ExApply TU
+                                                                   (Expr.ExSymbol TU (SymbolC "withdraw"))
+                                                                   (ALc (Expr.ExSymbol TU (SymbolC "w2")) ALn))
+                                                                  ALn))))
+                                                              (ALc
+                                                               (Expr.ExApply TU
+                                                                (Expr.ExSymbol TU (SymbolC "pure"))
+                                                                (ALc (Expr.ExQuotedName TU "glow-unit-lit")
+                                                                 ALn))
+                                                               ALn))))
+                                                           ALn))))
+                                                       ALn)))
+                                                    (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "bind"))
+                                                     (ALc
+                                                      (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "pure"))
+                                                       (ALc
+                                                        (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "*ℕ"))
+                                                         (ALc
+                                                          (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "cons"))
+                                                           (ALc (Expr.ExNil TU)
+                                                            (ALc
+                                                             (Expr.ExApply TU
+                                                              (Expr.ExSymbol TU (SymbolC "cons"))
+                                                              (ALc (Expr.ExT TU) (ALc (Expr.ExNil TU) ALn)))
+                                                             ALn)))
+                                                          (ALc (Expr.ExSymbol TU (SymbolC "wagerAmount")) ALn)))
+                                                        ALn))
+                                                      (ALc
+                                                       (Expr.ExLambda TU (ALc (SymbolC "w1") ALn)
+                                                        (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "next"))
+                                                         (ALc
+                                                          (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "action"))
+                                                           (ALc (Expr.ExFieldElem TU 7)
+                                                            (ALc (Expr.ExFieldElem TU 1)
+                                                             (ALc
+                                                              (Expr.ExApply TU
+                                                               (Expr.ExSymbol TU (SymbolC "withdraw"))
+                                                               (ALc (Expr.ExSymbol TU (SymbolC "w1")) ALn))
+                                                              ALn))))
+                                                          (ALc
+                                                           (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "next"))
+                                                            (ALc
+                                                             (Expr.ExApply TU
+                                                              (Expr.ExSymbol TU (SymbolC "action"))
+                                                              (ALc (Expr.ExFieldElem TU 8)
+                                                               (ALc (Expr.ExFieldElem TU 0)
+                                                                (ALc
+                                                                 (Expr.ExApply TU
+                                                                  (Expr.ExSymbol TU (SymbolC "withdraw"))
+                                                                  (ALc
+                                                                   (Expr.ExSymbol TU (SymbolC "escrowAmount"))
+                                                                   ALn))
+                                                                 ALn))))
+                                                             (ALc
+                                                              (Expr.ExApply TU
+                                                               (Expr.ExSymbol TU (SymbolC "pure"))
+                                                               (ALc (Expr.ExQuotedName TU "glow-unit-lit") ALn))
+                                                              ALn)))
+                                                           ALn))))
+                                                       ALn))))
+                                                   (ALc
+                                                    (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "pure"))
+                                                     (ALc (Expr.ExQuotedName TU "glow-unit-lit") ALn))
+                                                    ALn)))
+                                                 (ALc
+                                                  (Expr.ExApply TU (Expr.ExSymbol TU (SymbolC "pure"))
+                                                   (ALc (Expr.ExQuotedName TU "glow-unit-lit") ALn))
+                                                  ALn))))
+                                              ALn))))
+                                          ALn)))
+                                       ALn))))
+                                   ALn))))
+                               ALn)))
+                            ALn))))
+                        ALn)))
+                     ALn))))
+                 ALn))))
+             (ALc ("wagerAmount" , "Nat") (ALc ("escrowAmount" , "Nat") ALn)))
+            (ALc ("wagerAmount" , GLNat 10)
+             (ALc ("escrowAmount" , GLNat 2) ALn))
+            (ALc (CallC 1 0 (Publish (DigestOf (GLNat 7))))
+             (ALc (CallC 2 0 (Deposit 12)) ALn))
+            ]labeledValueEnd

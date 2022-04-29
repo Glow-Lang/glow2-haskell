@@ -10,11 +10,14 @@ module Glow.Gerbil.ImportSExpr
   )
 where
 
-import qualified Data.ByteString.Lazy as LBS
+import Control.Monad.State
+import qualified Data.ByteString as BS
 import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map (empty)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Data.Void (Void)
+import Glow.Gerbil.Fresh as Fresh
 import Glow.Gerbil.ParseAnf as ParseAnf
 import Glow.Gerbil.ParseCommon (parseTypeTable)
 import Glow.Gerbil.ParseProject as ParseProject
@@ -63,7 +66,9 @@ data FrontEndData = FrontEndData
     -- | Output of @glow pass anf@
     fedAnf :: [GT.AnfStatement],
     -- | Type table, extracted from the finaltypetable output of @glow pass project@.
-    fedTypeTable :: Map ByteString Type
+    fedTypeTable :: Map BS.ByteString Type,
+    -- | UnusedTable, marking which variables are used/unused in the input s-expressions
+    fedUnusedTable :: Fresh.UnusedTable
   }
   deriving (Show, Eq)
 
@@ -82,7 +87,7 @@ frontEndData params = do
           P.proc (fepExePath params) ["pass", passName, fepFile params]
             & P.readProcessStdout_
         let input =
-              T.unpack $ decodeUtf8 (LBS.toStrict bytes)
+              T.unpack $ decodeUtf8 (BS.toStrict bytes)
             parseResult =
               runParser
                 parseOutputs
@@ -102,6 +107,7 @@ frontEndData params = do
           FrontEndData
             { fedProject = ParseProject.parseModule projectStmts,
               fedAnf = ParseAnf.parseModule anfStmts,
-              fedTypeTable = parseTypeTable types
+              fedTypeTable = parseTypeTable types,
+              fedUnusedTable = execState (traverse_ Fresh.markAtomsUsed (anfoSEs <> projectoSEs)) Map.empty
             }
       _ -> error ("wrong number of outputs: " <> show (length projectoSEs, length anfoSEs))
