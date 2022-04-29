@@ -1,49 +1,6 @@
-WIP Experimental Haskell rewrite of parts of glow.
+# work in progress
+this branch contains exploratory implementation of Glow to Lurk compiler,
 
-# Building
-
-We use plain old cabal to build glow (not stack). To build:
-
-```sh
-cabal build all
-```
-
-We currently develop using the GHC 9.2.x series; if your distribution
-ships something different, we recommend using `ghcup` to get an
-appropriate version of the compiler.
-
-# Style guidelines
-
-Everything in this section is a *guideline*, not a hard-and-fast rule;
-don't deviate from this for no reason, but if there is a strong reason
-to go against this advice, just do it, don't ask permission.
-
-## Language Extensions
-
-Using more advanced language features is OK, but make sure they're
-actually buying you something that's worth the extra complexity &
-cognitive load. Err on the side of keeping it simple.
-
-## Imports
-
-As much as possible, import modules qualified, or import individual
-items from modules; do *not* import whole modules unqualified. This
-makes it easier to keep track of where identifiers are coming from.
-
-For some kinds of code it may make sense to violate this for one or
-two imports, e.g. a module defining a parser might want to just import
-everything from several modules from `megaparsec`. But avoid having
-multiple unrelated unqualified imports in the same module; it gets hard
-to follow quickly.
-
-## Formatting
-
-Use `ormolu` to auto-format the code. `scripts/format.sh` will do
-this for the whole codebase, but you should set up your editor to use
-it.
-
-Stick to ascii; no Greek letters in variable names, use `forall` instead
-of `∀`, etc. This rule is mainly to make sure our style is easy to
-actually type. The one exception to this is if you have a unicode
-character in a string literal, in which case the literal character is
-usually preferred.
+Haskel code provides interactive enviroment to calling lurk REPL, and translation process is prototyped in Agda,
+relevant code:
+https://github.com/Glow-Lang/glow2-haskell/tree/glow-on-lurk-prototype/agda/Glow/Simple/Lurk
