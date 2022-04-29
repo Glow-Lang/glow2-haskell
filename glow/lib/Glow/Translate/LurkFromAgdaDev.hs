@@ -221,7 +221,7 @@ translateAndPrintLurkCode x = do
 
 pickContainerFromAgdaFile :: String -> IO  (GLContainer)
 pickContainerFromAgdaFile valLabel = do
-  af <- TIO.readFile "/Users/Marcin/glow/agda/Glow/Simple/Lurk/ControlFlowTrans.agda"
+  af <- TIO.readFile "agda/Glow/Simple/Lurk/ControlFlowTrans.agda"
   case L.take 2 $ T.splitOn ("labeledValue[ \"" <> (T.pack valLabel) <> "\" ][") af of
     [ _ , x] -> do
        case L.take 2 $ T.splitOn "]labeledValueEnd" x of
@@ -239,7 +239,7 @@ pickContainerFromAgdaFile valLabel = do
 
 pickTestCaseFromAgdaFile :: String -> IO  (GLInteractionTest)
 pickTestCaseFromAgdaFile valLabel = do
-  af <- TIO.readFile "/Users/Marcin/glow/agda/Glow/Simple/Lurk/ControlFlowTrans.agda"
+  af <- TIO.readFile "agda/Glow/Simple/Lurk/ControlFlowTrans.agda"
   case L.take 2 $ T.splitOn ("labeledValue[ \"" <> (T.pack valLabel) <> "\" ][") af of
     [ _ , x] -> do
        case L.take 2 $ T.splitOn "]labeledValueEnd" x of
@@ -259,7 +259,7 @@ pickTestCaseFromAgdaFile valLabel = do
 
 pickFromAgdaFile :: String -> IO () 
 pickFromAgdaFile valLabel = do
-  af <- TIO.readFile "/Users/Marcin/glow/agda/Glow/Simple/Lurk/ControlFlowTrans.agda"
+  af <- TIO.readFile "agda/Glow/Simple/Lurk/ControlFlowTrans.agda"
   case L.take 2 $ T.splitOn ("labeledValue[ \"" <> (T.pack valLabel) <> "\" ][") af of
     [ _ , x] -> do
        case L.take 2 $ T.splitOn "]labeledValueEnd" x of
