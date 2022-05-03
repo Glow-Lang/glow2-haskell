@@ -1,3 +1,12 @@
+{-|
+Module      : Glow.Ast.BlockParamPassing
+Description : Blocks with parameters, jumps pass arguments
+
+An intermediate layer between the 'Glow.Ast.LiftedFunctions' layer
+and the 'Glow.Ast.LowLevel' layer, which breaks up the bodies and
+switch statements into 'Block's with parameters and 'JumpTarget's
+that pass arguments for those.
+-}
 module Glow.Ast.BlockParamPassing where
 
 import Data.Map.Strict (Map)
