@@ -69,6 +69,7 @@ library
   exposed-modules:
       Glow.Main
 
+    , Glow.Ast.BlockParamPassing
     , Glow.Ast.Common
     , Glow.Ast.Surface
     , Glow.Ast.HighLevel
