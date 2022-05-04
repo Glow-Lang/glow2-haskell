@@ -81,7 +81,7 @@ open AST-String zero
 
 someInteraction : Interaction
 someInteraction =  
-   interaction⟨   ("A" , honest) ∷ ("B" , honest) ∷ [] , "b2" ∶ Bool ∷  [] ⟩ (
+   interaction⟨   ("A" , trusted) ∷ ("B" , trusted) ∷ [] , "b2" ∶ Bool ∷  [] ⟩ (
         set "x" ∶ Bool ≔ < true > ;
         at "B" set "y" ∶ Bool ≔ input "enter choice 0" ;
         publish! "B" ⟶ "y" ;        
@@ -141,7 +141,7 @@ someCode = AST.Interaction.code (toProofs _ _ someInteraction)
 
 coinFlip : Interaction
 coinFlip =  
-   interaction⟨   ("A" , honest) ∷ ("B" , honest) ∷ [] , "wagerAmount" ∶ Nat ∷ "escrowAmount" ∶ Nat ∷  [] ⟩ (
+   interaction⟨   ("A" , trusted) ∷ ("B" , trusted) ∷ [] , "wagerAmount" ∶ Nat ∷ "escrowAmount" ∶ Nat ∷  [] ⟩ (
         at "A" set "randA" ∶ Nat ≔ input "enter random value" ;
         at "A" set "commitment" ∶ Digest ≔  "digestNat" $ var-a (dsot "randA")  ;
         publish! "A" ⟶ "commitment" ;
@@ -174,7 +174,7 @@ coinFlipCode = AST.Interaction.code (toProofs _ _ coinFlip)
 
 coinFlipConsensus : Interaction
 coinFlipConsensus =  
-   interaction⟨   ("A" , dishonest) ∷ ("B" , dishonest) ∷ [] , "wagerAmount" ∶ Nat ∷ "escrowAmount" ∶ Nat ∷  [] ⟩ (
+   interaction⟨   ("A" , distrusted) ∷ ("B" , distrusted) ∷ [] , "wagerAmount" ∶ Nat ∷ "escrowAmount" ∶ Nat ∷  [] ⟩ (
         set "commitment" ∶ Digest ≔ receivePublished (pId "A") ;
         deposit! "A" ⟶ ("+ℕ" $ (var-a (dsot "wagerAmount") , var-a (dsot "escrowAmount"))) ;
         set "randB" ∶ Nat ≔ receivePublished (pId "B")  ;                

@@ -89,8 +89,8 @@ open import Cubical.HITs.S1
 --   snd (snd (isNotSet-Functor A x)) x₁ = snd (snd x) λ i i₁ → Functor.F-ob ( x₁ i i₁ ) (fst x)
 
 module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}}
-            {BuilitInsIndex : Type₀} {{IsDiscrete-BuilitInsIndex : IsDiscrete BuilitInsIndex}}
-              {builtIns : BuiltIns' BuilitInsIndex {{IsDiscrete-BuilitInsIndex}}} where
+            {BuiltInsIndex : Type₀} {{IsDiscrete-BuiltInsIndex : IsDiscrete BuiltInsIndex}}
+              {builtIns : BuiltIns' BuiltInsIndex {{IsDiscrete-BuiltInsIndex}}} where
 
   -- prop-mode = one
   

@@ -192,7 +192,7 @@ appV {[]} x x₁ = x
 appV {x₂ ∷ dm} x (x₁ , x₃) = appV (x x₁) x₃
 
 
-module _ (BuilitInsIndex : Type₀) {{IsDiscrete-BuilitInsIndex : IsDiscrete BuilitInsIndex}} where
+module _ (BuiltInsIndex : Type₀) {{IsDiscrete-BuiltInsIndex : IsDiscrete BuiltInsIndex}} where
   record BuiltIn' (dm : List GType) (cdm : GType)  : Type₀ where
     constructor builitIn
     field
@@ -200,27 +200,27 @@ module _ (BuilitInsIndex : Type₀) {{IsDiscrete-BuilitInsIndex : IsDiscrete Bui
 
   record BuiltIns' : Type₀ where
     field
-      getBi : BuilitInsIndex → Σ _ λ x → BuiltIn' (proj₁ x) (proj₂ x)
+      getBi : BuiltInsIndex → Σ _ λ x → BuiltIn' (proj₁ x) (proj₂ x)
 
 
 
 ParticipantModality : Type₀
 ParticipantModality = 𝟚
 
-honest dishonest : ParticipantModality 
-honest = true
-dishonest = false
+trusted distrusted : ParticipantModality 
+trusted = true
+distrusted = false
 
 
 module _ (Identifier : Type₀) {{IsDiscrete-Identifier : IsDiscrete Identifier}}
-           {BuilitInsIndex : Type₀} {{IsDiscrete-BuilitInsIndex : IsDiscrete BuilitInsIndex}}
-              (builtIns : BuiltIns' BuilitInsIndex {{IsDiscrete-BuilitInsIndex}}) where
+           {BuiltInsIndex : Type₀} {{IsDiscrete-BuiltInsIndex : IsDiscrete BuiltInsIndex}}
+              (builtIns : BuiltIns' BuiltInsIndex {{IsDiscrete-BuiltInsIndex}}) where
 
   module AST (prop-mode : Interval) where 
 
     open PropMode prop-mode
 
-    BuiltIn = BuiltIn' BuilitInsIndex {{IsDiscrete-BuilitInsIndex}} 
+    BuiltIn = BuiltIn' BuiltInsIndex {{IsDiscrete-BuiltInsIndex}} 
 
     open BuiltIns' builtIns
 
@@ -228,7 +228,7 @@ module _ (Identifier : Type₀) {{IsDiscrete-Identifier : IsDiscrete Identifier}
     record BI₀ (dm : List GType) (cdm : GType ) : Type₀ where
       constructor bi'₀
       field
-        bIndex : BuilitInsIndex
+        bIndex : BuiltInsIndex
         {dm≡} : dm PM≡ proj₁ (fst (getBi bIndex))
         {cdm≡} : cdm PM≡ proj₂ (fst (getBi bIndex))
 
@@ -236,7 +236,7 @@ module _ (Identifier : Type₀) {{IsDiscrete-Identifier : IsDiscrete Identifier}
     record BI (cdm : GType ) : Type₀ where
       constructor bi'
       field
-        bIndex : BuilitInsIndex
+        bIndex : BuiltInsIndex
         -- {dm≡} : dm PM≡ proj₁ (fst (getBi bIndex))
         {cdm≡} : cdm PM≡ proj₂ (fst (getBi bIndex))
 
@@ -244,7 +244,7 @@ module _ (Identifier : Type₀) {{IsDiscrete-Identifier : IsDiscrete Identifier}
     getBI-Dm : ∀ {cdm} → BI cdm → List GType 
     getBI-Dm x = proj₁ (fst (getBi (BI.bIndex x )))
 
-    bi : (x : BuilitInsIndex) → BI ((proj₂ (fst (getBi x))))
+    bi : (x : BuiltInsIndex) → BI ((proj₂ (fst (getBi x))))
     bi x = bi' x {toWitness'bck refl}
 
     isSetIdentifier = Discrete→isSet (IsDiscrete.eqTest IsDiscrete-Identifier)
@@ -290,16 +290,16 @@ module _ (Identifier : Type₀) {{IsDiscrete-Identifier : IsDiscrete Identifier}
     IsHonestParticipantId : {participants : List (Identifier × ParticipantModality)} → Identifier → DecPropΣ 
     IsHonestParticipantId {participants} name =
         let q : (Identifier × ParticipantModality) → Σ Type (λ x → Dec x × isProp x)
-            q = (λ x → (×-dp (name DP≡ (proj₁ x)) (honest DP≡ (proj₂ x)))  )
+            q = (λ x → (×-dp (name DP≡ (proj₁ x)) (trusted DP≡ (proj₂ x)))  )
         in ExistMemberAs (λ x → fst (q x)  ) participants
               , Dec-ExistMemberAs {{dec-pred (λ x → proj₁ (snd (q x)))}}
                 , Is-Prop-ExistMemberAs _ _ (λ x → proj₂ (snd (q x)))
 
 
-    IsDishonestParticipantId : {participants : List (Identifier × ParticipantModality)} → Identifier → DecPropΣ 
-    IsDishonestParticipantId {participants} name =
+    IsDistrustedParticipantId : {participants : List (Identifier × ParticipantModality)} → Identifier → DecPropΣ 
+    IsDistrustedParticipantId {participants} name =
         let q : (Identifier × ParticipantModality) → Σ Type (λ x → Dec x × isProp x)
-            q = (λ x → (×-dp (name DP≡ (proj₁ x)) (dishonest DP≡ (proj₂ x)))  )
+            q = (λ x → (×-dp (name DP≡ (proj₁ x)) (distrusted DP≡ (proj₂ x)))  )
         in ExistMemberAs (λ x → fst (q x)  ) participants
               , Dec-ExistMemberAs {{dec-pred (λ x → proj₁ (snd (q x)))}}
                 , Is-Prop-ExistMemberAs _ _ (λ x → proj₂ (snd (q x)))
@@ -318,8 +318,8 @@ module _ (Identifier : Type₀) {{IsDiscrete-Identifier : IsDiscrete Identifier}
     data HonestParticipantId' {participants : List (Identifier × ParticipantModality)} : Type₀ where
       pId : (name : Identifier) → {isIn :  PM ( IsHonestParticipantId {participants} name ) } → HonestParticipantId'
 
-    data DishonestParticipantId' {participants : List (Identifier × ParticipantModality)} : Type₀ where
-      pId : (name : Identifier) → {isIn :  PM ( IsDishonestParticipantId {participants} name ) } → DishonestParticipantId'
+    data DistrustedParticipantId' {participants : List (Identifier × ParticipantModality)} : Type₀ where
+      pId : (name : Identifier) → {isIn :  PM ( IsDistrustedParticipantId {participants} name ) } → DistrustedParticipantId'
 
 
     pId-name : ∀ {ptps} → ParticipantId' {ptps} → Identifier
@@ -331,10 +331,10 @@ module _ (Identifier : Type₀) {{IsDiscrete-Identifier : IsDiscrete Identifier}
     pId-isInHon : ∀ {ptps} → (hp : HonestParticipantId' {ptps}) → PM ( IsHonestParticipantId {ptps} (pId-nameHon hp))
     pId-isInHon (pId _ {y}) = y
     
-    pId-nameDishon : ∀ {ptps} → DishonestParticipantId' {ptps} → Identifier
+    pId-nameDishon : ∀ {ptps} → DistrustedParticipantId' {ptps} → Identifier
     pId-nameDishon (pId name₁) = name₁
 
-    pId-isInDishon : ∀ {ptps} → (hp : DishonestParticipantId' {ptps}) → PM ( IsDishonestParticipantId {ptps} (pId-nameDishon hp))
+    pId-isInDishon : ∀ {ptps} → (hp : DistrustedParticipantId' {ptps}) → PM ( IsDistrustedParticipantId {ptps} (pId-nameDishon hp))
     pId-isInDishon (pId _ {y}) = y
 
 
@@ -402,12 +402,12 @@ module _ (Identifier : Type₀) {{IsDiscrete-Identifier : IsDiscrete Identifier}
       HonestParticipantId : Type₀
       HonestParticipantId = HonestParticipantId' {participantsWM}
 
-      DishonestParticipantId : Type₀
-      DishonestParticipantId = DishonestParticipantId' {participantsWM}
+      DistrustedParticipantId : Type₀
+      DistrustedParticipantId = DistrustedParticipantId' {participantsWM}
 
 
-      DishonestParticipantId→ℕ : DishonestParticipantId → ℕ
-      DishonestParticipantId→ℕ (pId _ {x}) = where?-ExistMemberAs (toWitness' x)
+      DistrustedParticipantId→ℕ : DistrustedParticipantId → ℕ
+      DistrustedParticipantId→ℕ (pId _ {x}) = where?-ExistMemberAs (toWitness' x)
 
 
       Scope : Type₀
@@ -592,13 +592,13 @@ module _ (Identifier : Type₀) {{IsDiscrete-Identifier : IsDiscrete Identifier}
           var : GType → Identifier → Expr
           body : Body → Expr
           lit : GlowValue → Expr
-          _$'_ : BuilitInsIndex → Args → Expr
+          _$'_ : BuiltInsIndex → Args → Expr
           input : GType → String → Expr
           sign : Arg → Expr 
 
 
           -- -- this is temporary solution, this constructors cannot apear in code, and are introduced on some passes, this distinction must be typesafe in the future! 
-          receivePublished : GType → DishonestParticipantId →  Expr
+          receivePublished : GType → DistrustedParticipantId →  Expr
 
           if_then_else_ : Expr → Expr → Expr → Expr
 
@@ -679,7 +679,7 @@ module _ (Identifier : Type₀) {{IsDiscrete-Identifier : IsDiscrete Identifier}
         
 
         -- this is temporary solution, this constructors cannot apear in code, and are introduced on some passes, this distinction must be typesafe in the future! 
-        receivePublished : DishonestParticipantId → {_ : PM (IsConsensus Γ) } → Expr Γ Τ
+        receivePublished : DistrustedParticipantId → {_ : PM (IsConsensus Γ) } → Expr Γ Τ
 
         if_then_else_ : Expr Γ Bool → Expr Γ Τ → Expr Γ Τ → Expr Γ Τ
 

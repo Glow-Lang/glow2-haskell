@@ -64,8 +64,8 @@ module ToLurkCF where
      (toWitness {Q = UniqueByDec≡ proj₁ (map-List (_, false) ("A" ∷ "B" ∷ []))} tt)
 
   idA idB : PID
-  idA = pId "A" {toWitnessDP ((IsDishonestParticipantId {ptps''} "A")) tt}
-  idB = pId "B" {toWitnessDP ((IsDishonestParticipantId {ptps''} "B")) tt}
+  idA = pId "A" {toWitnessDP ((IsDistrustedParticipantId {ptps''} "A")) tt}
+  idB = pId "B" {toWitnessDP ((IsDistrustedParticipantId {ptps''} "B")) tt}
 
   noBind : ∀ {A Γ Τ} → LMonad A Γ Unitᵍ → LMonad A (Γ , "nobind" ⦂ Unitᵍ) Τ → LMonad A Γ Τ
   noBind = bind
@@ -141,7 +141,7 @@ module ToLurkCF where
       -- -- AMM : (A : Type₀) → PublicContext →  Type₀ 
       -- -- MMM : PublicContext →  Type₀ 
       -- -- data MM (A : Type₀) (pc : PublicContext) : Type₀ where
-      -- --    guardMM : A → DishonestParticipantId → PCExpr pc Bool → Action pc → MM A pc
+      -- --    guardMM : A → DistrustedParticipantId → PCExpr pc Bool → Action pc → MM A pc
       -- --    branchMM : PCExpr pc Bool → AMM A pc → AMM A pc → MM A pc
 
 
@@ -253,7 +253,7 @@ module ToLurkCF where
       -- --   field
       -- --     stateContext : PublicContext
       -- --     action : Action stateContext
-      -- --     caller : DishonestParticipantId
+      -- --     caller : DistrustedParticipantId
           
 
 

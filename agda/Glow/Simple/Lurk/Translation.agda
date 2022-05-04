@@ -52,14 +52,14 @@ open import Glow.Simple.Lurk.HaskellInterface
 open import Cubical.Data.BinNat.BinNat
 
 module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}}
-            {BuilitInsIndex : Type₀} {{IsDiscrete-BuilitInsIndex : IsDiscrete BuilitInsIndex}}
-              {builtIns : BuiltIns' BuilitInsIndex {{IsDiscrete-BuilitInsIndex}}} where
+            {BuiltInsIndex : Type₀} {{IsDiscrete-BuiltInsIndex : IsDiscrete BuiltInsIndex}}
+              {builtIns : BuiltIns' BuiltInsIndex {{IsDiscrete-BuiltInsIndex}}} where
 
 
   module Translate {ptpsIds : List (Identifier)} {prms : _} {uniqueParams : _} where
 
     ptps : List (Identifier × ParticipantModality)
-    ptps = map-List (_, dishonest) ptpsIds
+    ptps = map-List (_, distrusted) ptpsIds
     
     module safe {uniquePtps : _} where
     
@@ -71,11 +71,11 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
       open SubstOne {Identifier} {builtIns = builtIns} {ptps = ptps}
 
       
-      open LurkAST List Identifier Unit renaming (Expr to HExpr)
+      open LurkAST List Identifier Unit renaming (Expr to LExpr)
 
       -- -- Expr' = Expr (con [] nothing)
       -- {-# TERMINATING #-}
-      -- translateE : ∀ {Γ Τ} → (e : Expr Γ Τ) → ⟨ IsPureE e ⟩ → HExpr 
+      -- translateE : ∀ {Γ Τ} → (e : Expr Γ Τ) → ⟨ IsPureE e ⟩ → LExpr 
       -- translateE (AST.var (AST.dsot name)) x = ExSymbol _ name
       -- translateE (AST.body (AST.bodyR []L e)) x = translateE e (proj₂ x)
       -- translateE (AST.body (AST.bodyR (h ∷L stmnts) e)) x with h
@@ -89,7 +89,7 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
       -- translateE (AST.sign x₁) x = {!!}
       -- translateE (AST.if e then e₁ else e₂) x = ExIf _ (translateE e _) (translateE e₁ _) (translateE e₂ _)
 
-      -- translateB : ∀ {Γ Τ} → (b : Body Γ Τ) → ⟨ IsPureB b ⟩ → HExpr
+      -- translateB : ∀ {Γ Τ} → (b : Body Γ Τ) → ⟨ IsPureB b ⟩ → LExpr
       -- translateB = ?
 
     module unsafe {uniquePtps : _} {A : Type₀} (a : A) (consI : Identifier)
@@ -103,23 +103,23 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
       open SubstOne {Identifier} {builtIns = builtIns} {ptps = ptps}
 
       
-      open LurkAST List Identifier A renaming (Expr to HExpr)
+      open LurkAST List Identifier A renaming (Expr to LExpr)
 
 
-      ni : String → HExpr
+      ni : String → LExpr
       ni x = ExQuotedName a x
 
-      symEx : Identifier → HExpr
+      symEx : Identifier → LExpr
       symEx x = ExSymbol a (SymbolC x)
 
-      cons : HExpr → HExpr → HExpr
+      cons : LExpr → LExpr → LExpr
       cons x x₁ = ExApply a (symEx consI) (x ∷ [ x₁ ])
 
-      appS : Identifier → List HExpr → HExpr
+      appS : Identifier → List LExpr → LExpr
       appS f xs = ExApply a (symEx f ) xs
 
 
-      translateLit : ∀ Τ → GTypeAgdaRep Τ → HExpr
+      translateLit : ∀ Τ → GTypeAgdaRep Τ → LExpr
       translateLit Bool false = ExNil a
       translateLit Bool true = ExT a
 
@@ -127,9 +127,9 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
       translateLit Int x = ni "not-implemented-glow-int-literal"
       translateLit Nat x = h (ℕ→Binℕ x)
         where
-          h : Binℕ → HExpr
+          h : Binℕ → LExpr
 
-          h' : Pos → HExpr
+          h' : Pos → LExpr
           h' (x0 x) = cons (ExNil a) (h' x)
           h' (x1 x) = cons (ExT a) (h x)
 
@@ -143,24 +143,24 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
       translateLit Signature x = ni "not-implemented-glow-signature-literal"
 
 
-      addSignature : HExpr → HExpr 
+      addSignature : LExpr → LExpr 
       addSignature = ExLambda a (map-List (λ x → SymbolC (AST.IdentifierWithType.name x)) prms)
 
 
       module safeAST where
 
-        translateArg :  ∀ {Γ Τ} → Arg Γ Τ → HExpr
+        translateArg :  ∀ {Γ Τ} → Arg Γ Τ → LExpr
         translateArg (AST.var-a (AST.dsot name)) = ExSymbol a (SymbolC name)
         translateArg {Τ = Τ} (AST.lit-a x) = translateLit _ x
 
-        translateArgs : ∀ {Γ Τ} → Args Γ Τ → Cubical.Data.List.List HExpr
+        translateArgs : ∀ {Γ Τ} → Args Γ Τ → Cubical.Data.List.List LExpr
         translateArgs {Τ = []} x = []
         translateArgs {Τ = x₁ ∷ []} x = [ translateArg x ]
         translateArgs {Τ = x₁ ∷ x₂ ∷ Τ} x = translateArg (proj₁ x) ∷ translateArgs (proj₂ x)
 
         {-# TERMINATING #-}
         -- TODO add proof of purity to arguments
-        translateE : ∀ {Γ Τ} → (e : Expr Γ Τ) → HExpr 
+        translateE : ∀ {Γ Τ} → (e : Expr Γ Τ) → LExpr 
         translateE (AST.var (AST.dsot name)) = ExSymbol a (SymbolC name)
         translateE (AST.body (AST.bodyR []L e)) = translateE e 
         translateE (AST.body (AST.bodyR (h ∷L stmnts) e)) with h
@@ -173,23 +173,23 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
         translateE (AST.sign x₁) = ni "fatal-error-sign"
         translateE (AST.if e then e₁ else e₂) = ExIf a (translateE e) (translateE e₁) (translateE e₂)
         translateE (AST.input x) = ni "fatal-error-input"
-        translateE (AST.receivePublished x) = ni "fatal-error-recivePub"
+        translateE (AST.receivePublished x) = ni "fatal-error-receivePub"
 
 
       module unsafeAST where
 
         module U = Unsafe
 
-        translateArg : U.Arg → HExpr
+        translateArg : U.Arg → LExpr
         translateArg (U.var-a name) = ExSymbol a (SymbolC name)
         translateArg (U.lit-a x) = translateLit _ (GlowValue.gValue x)
 
-        translateArgs : U.Args → Cubical.Data.List.List HExpr
+        translateArgs : U.Args → Cubical.Data.List.List LExpr
         translateArgs = map-List translateArg
 
         {-# TERMINATING #-}
         -- TODO add proof of purity to arguments
-        translateE : (e : U.Expr) → HExpr 
+        translateE : (e : U.Expr) → LExpr 
         translateE (U.var _ name) = ExSymbol a (SymbolC name)
         translateE (U.body (U.bodyR [] e)) = translateE e 
         translateE (U.body (U.bodyR (h ∷ stmnts) e)) with h
@@ -202,7 +202,7 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
         translateE (U.sign x₁) = ni "fatal-error-sign"
         translateE (U.if e then e₁ else e₂) = ExIf a (translateE e) (translateE e₁) (translateE e₂)
         translateE (U.input t x) = ni "fatal-error-input"
-        translateE (U.receivePublished t x) = ni "fatal-error-recivePub"
+        translateE (U.receivePublished t x) = ni "fatal-error-receivePub"
 
 
 

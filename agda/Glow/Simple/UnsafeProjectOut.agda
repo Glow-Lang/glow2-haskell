@@ -41,8 +41,8 @@ open import Glow.ListDecProps
 open import Glow.Simple.ContextMore
 
 module UnsafeProjectOut {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}}
-              {BuilitInsIndex : Type₀} {{IsDiscrete-BuilitInsIndex : IsDiscrete BuilitInsIndex}}
-              {builtIns : BuiltIns' BuilitInsIndex {{IsDiscrete-BuilitInsIndex}}} where
+              {BuiltInsIndex : Type₀} {{IsDiscrete-BuiltInsIndex : IsDiscrete BuiltInsIndex}}
+              {builtIns : BuiltIns' BuiltInsIndex {{IsDiscrete-BuiltInsIndex}}} where
 
   prop-mode = one
   
@@ -52,67 +52,67 @@ module UnsafeProjectOut {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscr
 
   -- open InteractionHead
 
-  makeDishonest' : (ps : List (Identifier × ParticipantModality))
+  makeDistrusted' : (ps : List (Identifier × ParticipantModality))
                    → PM (_ , UniqueByDec≡ proj₁ ps , isProp-UniqueBy _ _ )
                    → ∀ nm → PM ( IsHonestParticipantId {ps} nm )  
                            →  Σ (List (Identifier × ParticipantModality))
-                                  λ ps → PM ( IsDishonestParticipantId {ps} nm )
+                                  λ ps → PM ( IsDistrustedParticipantId {ps} nm )
                                     × PM (_ , UniqueByDec≡ proj₁ ps , isProp-UniqueBy _ _ )
-  makeDishonest' l x nm w =
+  makeDistrusted' l x nm w =
     ExistMemberAs-mapExisting-help {{eqTest (IsDiscrete-Identifier)}}
-     l x w (λ x₁ q → (proj₁ x₁ , dishonest) , proj₁ q , refl)
+     l x w (λ x₁ q → (proj₁ x₁ , distrusted) , proj₁ q , refl)
        (λ a _ → refl)
        (λ a a' x₁ x₂ → sym (proj₁ x₁) ∙ proj₁ x₂)
        λ a a' x₁ x₂ x₃ → proj₁ x₁ ∙ x₂ ,
          sum-rec (λ a₁ → empty-elim (x₃ (proj₁ x₁ ∙ x₂ , (sym a₁)))) (sym) (dichotomyBool (proj₂ a))  
 
-  makeDishonestΣ : (ih : InteractionHead) → HonestParticipantId ih 
-                           →  Σ InteractionHead DishonestParticipantId 
-  AST.participantsWM (fst (makeDishonestΣ ih hp)) =
-     (fst (makeDishonest' (AST.participantsWM ih) (AST.uniquePtcpnts ih) (pId-nameHon hp) (pId-isInHon hp)))
-  AST.parameters (fst (makeDishonestΣ ih hp)) = AST.parameters ih
-  AST.uniqueParams (fst (makeDishonestΣ ih hp)) = AST.uniqueParams ih
-  AST.uniquePtcpnts (fst (makeDishonestΣ ih hp)) = 
-     proj₂ (snd (makeDishonest' (AST.participantsWM ih) (AST.uniquePtcpnts ih) (pId-nameHon hp) (pId-isInHon hp)))
-  snd (makeDishonestΣ ih hp) =
+  makeDistrustedΣ : (ih : InteractionHead) → HonestParticipantId ih 
+                           →  Σ InteractionHead DistrustedParticipantId 
+  AST.participantsWM (fst (makeDistrustedΣ ih hp)) =
+     (fst (makeDistrusted' (AST.participantsWM ih) (AST.uniquePtcpnts ih) (pId-nameHon hp) (pId-isInHon hp)))
+  AST.parameters (fst (makeDistrustedΣ ih hp)) = AST.parameters ih
+  AST.uniqueParams (fst (makeDistrustedΣ ih hp)) = AST.uniqueParams ih
+  AST.uniquePtcpnts (fst (makeDistrustedΣ ih hp)) = 
+     proj₂ (snd (makeDistrusted' (AST.participantsWM ih) (AST.uniquePtcpnts ih) (pId-nameHon hp) (pId-isInHon hp)))
+  snd (makeDistrustedΣ ih hp) =
     AST.pId ((pId-nameHon hp))
-       {proj₁ (snd (makeDishonest' (AST.participantsWM ih) (AST.uniquePtcpnts ih) (pId-nameHon hp) (pId-isInHon hp)))}
+       {proj₁ (snd (makeDistrusted' (AST.participantsWM ih) (AST.uniquePtcpnts ih) (pId-nameHon hp) (pId-isInHon hp)))}
 
-  makeDishonest : (ih : InteractionHead) → HonestParticipantId ih → InteractionHead   
-  makeDishonest ih = fst ∘ makeDishonestΣ ih
+  makeDistrusted : (ih : InteractionHead) → HonestParticipantId ih → InteractionHead   
+  makeDistrusted ih = fst ∘ makeDistrustedΣ ih
 
--- makeDishonest' l x nm w
+-- makeDistrusted' l x nm w
  
-  makeDishonest'-ParticipantId : ∀ pp → ∀ nm → ∀ x nm' w 
+  makeDistrusted'-ParticipantId : ∀ pp → ∀ nm → ∀ x nm' w 
            → ⟨ IsParticipantId {map-List proj₁ pp} nm ⟩
-           → ⟨ IsParticipantId {map-List proj₁ (fst (makeDishonest' pp x nm' w))} nm ⟩  
-  makeDishonest'-ParticipantId (x₂ ∷ pp) nm x nm' (inl x₃) xx = xx
-  makeDishonest'-ParticipantId (x₂ ∷ pp) nm (x , x₄) nm' (inr x₃) (inl x₁) = inl x₁
-  makeDishonest'-ParticipantId (x₂ ∷ pp) nm (x , x₄) nm' (inr x₃) (inr x₁) =
-     inr (proj₁ x₁ , (makeDishonest'-ParticipantId pp nm x₄ nm' (proj₂ x₃) (proj₂ x₁)))
+           → ⟨ IsParticipantId {map-List proj₁ (fst (makeDistrusted' pp x nm' w))} nm ⟩  
+  makeDistrusted'-ParticipantId (x₂ ∷ pp) nm x nm' (inl x₃) xx = xx
+  makeDistrusted'-ParticipantId (x₂ ∷ pp) nm (x , x₄) nm' (inr x₃) (inl x₁) = inl x₁
+  makeDistrusted'-ParticipantId (x₂ ∷ pp) nm (x , x₄) nm' (inr x₃) (inr x₁) =
+     inr (proj₁ x₁ , (makeDistrusted'-ParticipantId pp nm x₄ nm' (proj₂ x₃) (proj₂ x₁)))
 
-  makeDishonest'-DishonestParticipantId : ∀ pp → ∀ nm → ∀ x nm' w 
-           → ⟨ IsDishonestParticipantId {pp} nm ⟩
-           → ⟨ IsDishonestParticipantId {(fst (makeDishonest' pp x nm' w))} nm ⟩  
-  makeDishonest'-DishonestParticipantId (x₂ ∷ pp) nm x nm' (inl x₃) (inl x₁) = inl (proj₁ x₁ , refl)
-  makeDishonest'-DishonestParticipantId (x₂ ∷ pp) nm x nm' (inl x₃) (inr x₁) =
+  makeDistrusted'-DistrustedParticipantId : ∀ pp → ∀ nm → ∀ x nm' w 
+           → ⟨ IsDistrustedParticipantId {pp} nm ⟩
+           → ⟨ IsDistrustedParticipantId {(fst (makeDistrusted' pp x nm' w))} nm ⟩  
+  makeDistrusted'-DistrustedParticipantId (x₂ ∷ pp) nm x nm' (inl x₃) (inl x₁) = inl (proj₁ x₁ , refl)
+  makeDistrusted'-DistrustedParticipantId (x₂ ∷ pp) nm x nm' (inl x₃) (inr x₁) =
      inr ((λ x₄ → proj₁ x (ExistMemberAs→ (λ a x₅ → sym (proj₁ x₄) ∙ proj₁ x₅) (λ a → _ ≟ _) (proj₂ x₁))) , (proj₂ x₁))
      --inr ((λ x₄ → {!proj₁ x₄ ∙ (sym (proj₁ x₃))!}) , (proj₂ x₁))
-  makeDishonest'-DishonestParticipantId (x₂ ∷ pp) nm (x , x₄) nm' (inr x₃) (inl x₁) = inl x₁
-  makeDishonest'-DishonestParticipantId (x₂ ∷ pp) nm (x , x₄) nm' (inr x₃) (inr x₁) =
-     inr (proj₁ x₁ , (makeDishonest'-DishonestParticipantId pp nm x₄ nm' (proj₂ x₃) (proj₂ x₁)))
+  makeDistrusted'-DistrustedParticipantId (x₂ ∷ pp) nm (x , x₄) nm' (inr x₃) (inl x₁) = inl x₁
+  makeDistrusted'-DistrustedParticipantId (x₂ ∷ pp) nm (x , x₄) nm' (inr x₃) (inr x₁) =
+     inr (proj₁ x₁ , (makeDistrusted'-DistrustedParticipantId pp nm x₄ nm' (proj₂ x₃) (proj₂ x₁)))
 
 
-  makeDishonest-ParticipantId : (ih : InteractionHead) → ∀ hp → 
-                                    ParticipantId ih → ParticipantId (makeDishonest ih hp)
-  makeDishonest-ParticipantId ih hp (AST.pId name₁ {y}) =
-     AST.pId name₁ {makeDishonest'-ParticipantId _ _ (AST.uniquePtcpnts ih) _ _ y}
+  makeDistrusted-ParticipantId : (ih : InteractionHead) → ∀ hp → 
+                                    ParticipantId ih → ParticipantId (makeDistrusted ih hp)
+  makeDistrusted-ParticipantId ih hp (AST.pId name₁ {y}) =
+     AST.pId name₁ {makeDistrusted'-ParticipantId _ _ (AST.uniquePtcpnts ih) _ _ y}
 
     
-  makeDishonest-DishonestParticipantId : (ih : InteractionHead) → ∀ hp → 
-                                    DishonestParticipantId ih → DishonestParticipantId (makeDishonest ih hp)
-  makeDishonest-DishonestParticipantId ih hp (AST.pId name₁ {y}) =
-     AST.pId name₁ {makeDishonest'-DishonestParticipantId _ _ (AST.uniquePtcpnts ih) _ _ y}
+  makeDistrusted-DistrustedParticipantId : (ih : InteractionHead) → ∀ hp → 
+                                    DistrustedParticipantId ih → DistrustedParticipantId (makeDistrusted ih hp)
+  makeDistrusted-DistrustedParticipantId ih hp (AST.pId name₁ {y}) =
+     AST.pId name₁ {makeDistrusted'-DistrustedParticipantId _ _ (AST.uniquePtcpnts ih) _ _ y}
 
   CtxTrans' : (ptps : List (Identifier × ParticipantModality))
             → Maybe (HonestParticipantId' {ptps})
@@ -132,7 +132,7 @@ module UnsafeProjectOut {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscr
             → (z : (⟨ IsHonestParticipantId {ptps} nm ⟩))
             → (hp : (HonestParticipantId' {ptps}))
             → ⟨ CtxTrans' ptps (just (AST.pId nm {z})) hp ⟩
-            → (⟨ IsHonestParticipantId  {(fst (makeDishonest' ptps q (pId-nameHon hp) (pId-isInHon hp)))} nm ⟩ )
+            → (⟨ IsHonestParticipantId  {(fst (makeDistrusted' ptps q (pId-nameHon hp) (pId-isInHon hp)))} nm ⟩ )
   CtxTrans'-cases (x₁ ∷ ptps) nm (inr x₂) (AST.pId name₁ {inl x₃}) x = inr ((true≢false ∘ proj₂) , (proj₂ x₂))
   CtxTrans'-cases (x₁ ∷ ptps) nm (inl x₂) (AST.pId name₁ {inr x₃}) x = inl x₂
   CtxTrans'-cases (x₁ ∷ ptps) {q} nm (inr x₂) (AST.pId name₁ {inr x₃}) x =
@@ -144,7 +144,7 @@ module UnsafeProjectOut {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscr
             → (z : (⟨ IsHonestParticipantId {ptps} nm ⟩))
             → (hp : (HonestParticipantId' {ptps}))
             → (⟨ CtxTrans' ptps (just (AST.pId nm {z})) hp ⟩ → Empty)
-            → (⟨ IsDishonestParticipantId  {(fst (makeDishonest' ptps q (pId-nameHon hp) (pId-isInHon hp)))} nm ⟩ )
+            → (⟨ IsDistrustedParticipantId  {(fst (makeDistrusted' ptps q (pId-nameHon hp) (pId-isInHon hp)))} nm ⟩ )
   CtxTrans'-cases¬ (x₁ ∷ ptps) nm (inr x₂) (AST.pId name₁ {inl x₃}) x = empty-elim (x _)
   CtxTrans'-cases¬ (x₁ ∷ ptps) nm (inl x₂) (AST.pId name₁ {inr x₃}) x = empty-elim (x _)
   CtxTrans'-cases¬ (x₁ ∷ ptps) {q} nm (inr x₂) (AST.pId name₁ {inr x₃}) x =
@@ -175,7 +175,7 @@ module UnsafeProjectOut {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscr
 
   ctxTrans-hlp-CE' : ∀ {ih : _} → ∀ {entries₁} → ∀ hp → ∀ nm → (q : ⟨ IsHonestParticipantId {participantsWM ih} nm ⟩) →  
                         Maybe
-                          ⟨ ×-dp ( IsHonestParticipantId {participantsWM (makeDishonest ih hp)} nm )
+                          ⟨ ×-dp ( IsHonestParticipantId {participantsWM (makeDistrusted ih hp)} nm )
                           
                            (CtxTrans' (participantsWM ih)
                                    (narrowScope ih
@@ -183,20 +183,20 @@ module UnsafeProjectOut {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscr
                                    hp) ⟩ 
   ctxTrans-hlp-CE' {ih} {entries₁} hp nm q =
       dec-rec' _ just (const nothing)
-        (proj₁ (snd ( ×-dp ( IsHonestParticipantId {participantsWM (makeDishonest ih hp)} nm )
+        (proj₁ (snd ( ×-dp ( IsHonestParticipantId {participantsWM (makeDistrusted ih hp)} nm )
                           
                            (CtxTrans' (participantsWM ih)
                                    (narrowScope ih
                                    (con entries₁ nothing) (just (pId nm {q})) tt)
                                    hp))) )
 
-  ctxTrans-hlp-CE : ∀ {ih : _} → ∀ hp → ContextEntry ih → Maybe (ContextEntry (makeDishonest ih hp))
+  ctxTrans-hlp-CE : ∀ {ih : _} → ∀ hp → ContextEntry ih → Maybe (ContextEntry (makeDistrusted ih hp))
   ctxTrans-hlp-CE hp (AST.ice nothing name₁ type₁) = just (AST.ice nothing name₁ type₁)
   ctxTrans-hlp-CE ih@{AST.interactionHead (x ∷ xs) pms} hp (AST.ice (just zz@(AST.pId nm' {yy'})) name₁ type₁) =
     dec-rec' _ (just ∘ (λ b → ice (just (pId nm' {b})) name₁ type₁) ∘ ctxTrans-hlp {ih = ih} {hp = hp} nm' yy')
      (const nothing) (proj₁ (snd (CtxTrans' _ (just zz) hp )) )
 
-  scopeTrans : ∀ {ih : _} {hp} → (sc : Scope ih) → ⟨ CtxTrans' (participantsWM ih) sc hp ⟩ → Scope (makeDishonest ih hp)
+  scopeTrans : ∀ {ih : _} {hp} → (sc : Scope ih) → ⟨ CtxTrans' (participantsWM ih) sc hp ⟩ → Scope (makeDistrusted ih hp)
   scopeTrans {ih} {hp} nothing x = nothing
   scopeTrans {ih} {hp} (just (AST.pId name₁ {yy})) x = just (AST.pId name₁ {ctxTrans-hlp {ih} {hp} name₁ yy x })
 
@@ -210,9 +210,9 @@ module UnsafeProjectOut {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscr
 
 
     {-# TERMINATING #-}
-    projectOutE : U.Expr ih → U.Expr (makeDishonest ih hp)
-    projectOutA : U.Arg ih → U.Arg (makeDishonest ih hp)
-    projectOutS : U.Stmnt ih → Maybe (U.Stmnt (makeDishonest ih hp))
+    projectOutE : U.Expr ih → U.Expr (makeDistrusted ih hp)
+    projectOutA : U.Arg ih → U.Arg (makeDistrusted ih hp)
+    projectOutS : U.Stmnt ih → Maybe (U.Stmnt (makeDistrusted ih hp))
 
     projectOutE (U.var x x₁) = (U.var x x₁)
     projectOutE (U.body (U.bodyR stmnts₁ expr₁)) = (U.body (U.bodyR (filterMap projectOutS stmnts₁)  (projectOutE expr₁)))
@@ -220,7 +220,7 @@ module UnsafeProjectOut {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscr
     projectOutE (x U.$' x₁) = (x U.$' (map-List projectOutA x₁))
     projectOutE (U.input x x₁) = (U.input x x₁)
     projectOutE (U.sign x) = (U.sign (projectOutA x))
-    projectOutE (U.receivePublished x x₁) = (U.receivePublished x (makeDishonest-DishonestParticipantId ih hp x₁))
+    projectOutE (U.receivePublished x x₁) = (U.receivePublished x (makeDistrusted-DistrustedParticipantId ih hp x₁))
     projectOutE (U.if x then x₁ else x₂) = (U.if (projectOutE x) then (projectOutE x₁) else (projectOutE x₂))
     
     projectOutA (U.var-a x) = (U.var-a x)
@@ -231,26 +231,26 @@ module UnsafeProjectOut {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscr
     ... | U.BS-let sc@(just _) x₂ x₃ x₄ = do
       ct' ← mbDec (CtxTrans' (participantsWM ih) sc hp)
       just (U.bindingS (U.BS-let (scopeTrans {ih} {hp} sc ct' ) x₂ x₃ (projectOutE x₄)))
-    ... | U.BS-publish! (AST.pId nm) t x₂ with mbDec (IsHonestParticipantId {participants = participantsWM (makeDishonest ih hp)} nm)
-    ... | nothing = just (U.bindingS (U.BS-let nothing x₂ t (U.receivePublished t (snd (makeDishonestΣ ih hp)))))
+    ... | U.BS-publish! (AST.pId nm) t x₂ with mbDec (IsHonestParticipantId {participants = participantsWM (makeDistrusted ih hp)} nm)
+    ... | nothing = just (U.bindingS (U.BS-let nothing x₂ t (U.receivePublished t (snd (makeDistrustedΣ ih hp)))))
     ... | just x₃ = just (U.bindingS (U.BS-publish! (AST.pId nm {x₃}) t x₂)) 
 
     
     projectOutS (U.nonBindingS (U.stmntNBS x)) = map-Maybe (U.nonBindingS ∘ U.stmntNBS) (h x)
       where
-        h : U.NBStmnt ih → Maybe (U.NBStmnt (makeDishonest ih hp))
+        h : U.NBStmnt ih → Maybe (U.NBStmnt (makeDistrusted ih hp))
         h (U.NBS-require! x) = just (U.NBS-require! (projectOutE x))
-        h (U.NBS-deposit! x x₁) = just (U.NBS-deposit! (makeDishonest-ParticipantId ih hp x ) (projectOutE x₁))
-        h (U.NBS-withdraw! x x₁) = just (U.NBS-withdraw! (makeDishonest-ParticipantId ih hp x) (projectOutE x₁))
+        h (U.NBS-deposit! x x₁) = just (U.NBS-deposit! (makeDistrusted-ParticipantId ih hp x ) (projectOutE x₁))
+        h (U.NBS-withdraw! x x₁) = just (U.NBS-withdraw! (makeDistrusted-ParticipantId ih hp x) (projectOutE x₁))
         h (U.NBS-publishVal! x x₁) = nothing -- TODO : figure out semantics of this, and sort out its safety
     projectOutS (U.nonBindingS (U.exprNBS x)) = just (U.nonBindingS (U.exprNBS (projectOutE x)))
 
-    projectOut : List (U.Stmnt ih) → List (U.Stmnt (makeDishonest ih hp))
+    projectOut : List (U.Stmnt ih) → List (U.Stmnt (makeDistrusted ih hp))
     projectOut = filterMap projectOutS
 
 
-  -- makeDishonestAll : InteractionHead → InteractionHead 
-  -- makeDishonestAll x = {!x!}
+  -- makeDistrustedAll : InteractionHead → InteractionHead 
+  -- makeDistrustedAll x = {!x!}
 
   -- projectOutAll : {!!}
   -- projectOutAll = {!!}
@@ -264,6 +264,6 @@ module UnsafeProjectOut {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscr
   --        -- List (BTF (filterMap (ctxTrans-hlp-CE {ih} hp) (AST.entries Γ)))
 
 
-  -- ctxTrans : ∀ {ih : _} {hp} → (Γ : Context ih) → CtxTrans hp Γ → Context (makeDishonest ih hp)
+  -- ctxTrans : ∀ {ih : _} {hp} → (Γ : Context ih) → CtxTrans hp Γ → Context (makeDistrusted ih hp)
   -- AST.entries (ctxTrans Γ x) = btfs _ _ (snd (proj₂ x))
   -- AST.scope' (ctxTrans {ih} {hp} Γ x) = scopeTrans {ih} {hp} (_) (proj₁ x)

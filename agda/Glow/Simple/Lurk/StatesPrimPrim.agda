@@ -48,14 +48,14 @@ open import Glow.ListDecProps
 open import Cubical.Categories.Category
 
 module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}}
-            {BuilitInsIndex : Type₀} {{IsDiscrete-BuilitInsIndex : IsDiscrete BuilitInsIndex}}
-              {builtIns : BuiltIns' BuilitInsIndex {{IsDiscrete-BuilitInsIndex}}} where
+            {BuiltInsIndex : Type₀} {{IsDiscrete-BuiltInsIndex : IsDiscrete BuiltInsIndex}}
+              {builtIns : BuiltIns' BuiltInsIndex {{IsDiscrete-BuiltInsIndex}}} where
 
 
   module TraceNice {ptpsIds : List (Identifier)} where
 
     ptps : List (Identifier × ParticipantModality)
-    ptps = map-List (_, dishonest) ptpsIds
+    ptps = map-List (_, distrusted) ptpsIds
     
     module _ {uniquePtps : _} where
     
@@ -142,7 +142,7 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
       AMM : (A : Type₀) → PublicContext →  Type₀ 
       MMM : PublicContext →  Type₀ 
       data MM (A : Type₀) (pc : PublicContext) : Type₀ where
-         guardMM : A → DishonestParticipantId → PCExpr pc Bool → Action pc → MM A pc
+         guardMM : A → DistrustedParticipantId → PCExpr pc Bool → Action pc → MM A pc
          branchMM : PCExpr pc Bool → AMM A pc → AMM A pc → MM A pc
 
 
@@ -250,7 +250,7 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
         field
           stateContext : PublicContext
           action : Action stateContext
-          caller : DishonestParticipantId
+          caller : DistrustedParticipantId
           
 
 

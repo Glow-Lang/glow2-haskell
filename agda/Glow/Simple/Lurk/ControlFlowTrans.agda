@@ -64,28 +64,28 @@ mkLV {label = label} {a = a} = labeledValue[ label ][ a ]labeledValueEnd
 open import Glow.Simple.UnsafeProjectOut
 
 module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}}
-            {BuilitInsIndex : Type₀} {{IsDiscrete-BuilitInsIndex : IsDiscrete BuilitInsIndex}}
-              {builtIns : BuiltIns' BuilitInsIndex {{IsDiscrete-BuilitInsIndex}}} where
+            {BuiltInsIndex : Type₀} {{IsDiscrete-BuiltInsIndex : IsDiscrete BuiltInsIndex}}
+              {builtIns : BuiltIns' BuiltInsIndex {{IsDiscrete-BuiltInsIndex}}} where
 
 
-  everyIsDishonest-lem : (ptpsIds : List (Identifier)) → ∀ name →
+  everyIsDistrusted-lem : (ptpsIds : List (Identifier)) → ∀ name →
                            ExistMemberAs (PathP (λ x₁ → Identifier) name)
                                   (map-List proj₁ (map-List (_, false) ptpsIds)) →
                            ExistMemberAs (λ x₁ → (name ≡ proj₁ x₁) × (false ≡ proj₂ x₁))
                                 (map-List (_, false) ptpsIds)
 
-  everyIsDishonest-lem [] name ()
-  everyIsDishonest-lem (x ∷ ptpsIds) name (inl x₁) = inl (x₁ , refl)
-  everyIsDishonest-lem (x ∷ ptpsIds) name (inr x₁) = inr (proj₁ x₁ ∘ proj₁ , (everyIsDishonest-lem ptpsIds name (proj₂ x₁)))
+  everyIsDistrusted-lem [] name ()
+  everyIsDistrusted-lem (x ∷ ptpsIds) name (inl x₁) = inl (x₁ , refl)
+  everyIsDistrusted-lem (x ∷ ptpsIds) name (inr x₁) = inr (proj₁ x₁ ∘ proj₁ , (everyIsDistrusted-lem ptpsIds name (proj₂ x₁)))
 
 
   
   --TODO: parametrisation by abstracted fields of interactionHead may not be good idea,
-  --      instead try refactoring to parametrization via InteractionHead + apropriate predicate of dishonesty
+  --      instead try refactoring to parametrization via InteractionHead + apropriate predicate of distrustedy
   module MonadicControlFlow (ptpsIds : List (Identifier)) (prms : _) (uniquePrms : _) where
 
     ptps : List (Identifier × ParticipantModality)
-    ptps = map-List (_, dishonest) ptpsIds
+    ptps = map-List (_, distrusted) ptpsIds
     
     module MonadicControlFlowUP (uniquePtps : _) where
 
@@ -174,14 +174,14 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
 
       FreeExpr = Expr (con [] nothing)
 
-      PID = DishonestParticipantId
+      PID = DistrustedParticipantId
       
       -- TODO : try to parametrise be all definitions from AST
       module _ {Expr : Context → GType → Type₀} {IsPureE : ∀ {Γ Τ} → Expr Γ Τ → DecPropΣ} where
   
         data Action' (Γ : Context) : Type₀ where
-          withdrawA : (e : Expr Γ Nat) → (⟨ IsPureE e ⟩) → Action' Γ
-          depositA : (e : Expr Γ Nat) → (⟨ IsPureE e ⟩) → Action' Γ 
+          withdrawA : (e : Expr Γ Nat) → ⟨ IsPureE e ⟩ → Action' Γ
+          depositA : (e : Expr Γ Nat) → ⟨ IsPureE e ⟩ → Action' Γ 
 
         _,_⦂_ : Context → Identifier → GType → Context
         Γ , x ⦂ Τ = addToContext Γ (AST.ice nothing x Τ)
@@ -192,7 +192,7 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
           expectPub : A → PID → LMonad' A Γ Τ
           bind : ∀ {x Τ'} → LMonad' A Γ Τ' → LMonad' A (Γ , x ⦂ Τ') Τ → LMonad' A Γ Τ
           next : ∀ {Τ'} → LMonad' A Γ Τ' → LMonad' A Γ Τ → LMonad' A Γ Τ
-          pure : (e : Expr Γ Τ) → (⟨ IsPureE e ⟩) → LMonad' A Γ Τ
+          pure : (e : Expr Γ Τ) → ⟨ IsPureE e ⟩ → LMonad' A Γ Τ
           branch : (e : Expr Γ Bool) → (⟨ IsPureE e ⟩) → LMonad' A Γ Τ → LMonad' A Γ Τ → LMonad' A Γ Τ
 
         labelStates : ∀ {A Γ Τ} → ℕ → LMonad' A Γ Τ → (Σ ℕ λ _ → LMonad' ℕ Γ Τ) 
@@ -223,8 +223,8 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
       ULMonad = LMonad' {λ _ _ → Unsafe.Expr} {λ _ → Unit-dp }
 
 
-      everyIsDishonest : ParticipantId → PID
-      everyIsDishonest (AST.pId name {x}) = AST.pId name {everyIsDishonest-lem _ _ x}
+      everyIsDistrusted : ParticipantId → PID
+      everyIsDistrusted (AST.pId name {x}) = AST.pId name {everyIsDistrusted-lem _ _ x}
 
 
 
@@ -244,12 +244,12 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
           just ((require x ispure-x refl))
         toLMonadNBS Γ (AST.stmntNBS (AST.NBS-deposit! x x₁)) = do
           ispure-x₁ ← mbIsPureE x₁
-          just ((action tt (everyIsDishonest x) (depositA x₁ ispure-x₁) refl))
+          just ((action tt (everyIsDistrusted x) (depositA x₁ ispure-x₁) refl))
         toLMonadNBS Γ (AST.stmntNBS (AST.NBS-withdraw! x x₁)) = do
           ispure-x₁ ← mbIsPureE x₁
-          just ((action tt (everyIsDishonest x) (withdrawA x₁ ispure-x₁) refl))
+          just ((action tt (everyIsDistrusted x) (withdrawA x₁ ispure-x₁) refl))
           -- e ← toLMonadE _ _ x₁ -- TODO make it work for impure exprs!
-          -- just (bind e ((action tt (everyIsDishonest x) (withdrawA {!!} {!!}) refl)))
+          -- just (bind e ((action tt (everyIsDistrusted x) (withdrawA {!!} {!!}) refl)))
         toLMonadNBS Γ (AST.stmntNBS (AST.NBS-publishVal! x x₁)) = nothing
         toLMonadNBS Γ (AST.exprNBS x) = do
           e ←  (toLMonadE _ _ x) 
@@ -304,10 +304,10 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
           just ((require x ispure-x refl))
         toLMonadNBS Γ (U.stmntNBS (U.NBS-deposit! x x₁)) = do
           ispure-x₁ ← mbIsPureE x₁
-          just ((action tt (everyIsDishonest x) (depositA x₁ ispure-x₁) refl))
+          just ((action tt (everyIsDistrusted x) (depositA x₁ ispure-x₁) refl))
         toLMonadNBS Γ (U.stmntNBS (U.NBS-withdraw! x x₁)) = do
           ispure-x₁ ← mbIsPureE x₁
-          just ((action tt (everyIsDishonest x) (withdrawA x₁ ispure-x₁) refl))
+          just ((action tt (everyIsDistrusted x) (withdrawA x₁ ispure-x₁) refl))
 
         toLMonadNBS Γ (U.stmntNBS (U.NBS-publishVal! x x₁)) = nothing
         toLMonadNBS Γ (U.exprNBS x) = do
@@ -368,7 +368,7 @@ module ToLurkCF (ptpsIds : List (String)) (prms : _) (uniquePrms : _) (uniquePtp
 
 
   PID→LExpr : PID → L.Expr
-  PID→LExpr z = L.ExFieldElem _ (DishonestParticipantId→ℕ ih'' z)
+  PID→LExpr z = L.ExFieldElem _ (DistrustedParticipantId→ℕ ih'' z)
 
   -- TODO : merge those modules (may  require better parametrisation of LMonad')
   module safeAST where
@@ -462,8 +462,8 @@ module examplesAB where
     open import Cubical.Data.Unit renaming (tt to TU)
 
     idA idB : PID
-    idA = pId "A" {toWitnessDP ((IsDishonestParticipantId {ptps''} "A")) tt}
-    idB = pId "B" {toWitnessDP ((IsDishonestParticipantId {ptps''} "B")) tt}
+    idA = pId "A" {toWitnessDP ((IsDistrustedParticipantId {ptps''} "A")) tt}
+    idB = pId "B" {toWitnessDP ((IsDistrustedParticipantId {ptps''} "B")) tt}
 
 
     testLM : LMonad ℕ (con [] nothing) Unitᵍ 
@@ -491,8 +491,8 @@ module examplesAB where
 
 
     idA idB : PID
-    idA = pId "A" {toWitnessDP ((IsDishonestParticipantId {ptps''} "A")) tt}
-    idB = pId "B" {toWitnessDP ((IsDishonestParticipantId {ptps''} "B")) tt}
+    idA = pId "A" {toWitnessDP ((IsDistrustedParticipantId {ptps''} "A")) tt}
+    idB = pId "B" {toWitnessDP ((IsDistrustedParticipantId {ptps''} "B")) tt}
 
     testCoinFlip : Statements ih'' (con [] nothing)
     testCoinFlip = coinFlipConsensusCode
@@ -529,7 +529,7 @@ module examplesAB where
     testCoinFlipProjected = fixProofs' (List ∘ U.Stmnt) (
         UPO.projectOut (pId "B" {toWitnessDP (IsHonestParticipantId {("A" , false) ∷ ("B" , true) ∷ []} "B") tt}) 
          (UPO.projectOut (pId "A" {toWitnessDP (IsHonestParticipantId {("A" , true) ∷ ("B" , true) ∷ []} "A") tt})
-            (ToUnsafe.stmntsF (interactionHead (("A" , honest) ∷ ("B" , honest) ∷ []) ((iwt "wagerAmount" Nat) ∷ (iwt "escrowAmount" Nat) ∷ [])) coinFlipCode)))
+            (ToUnsafe.stmntsF (interactionHead (("A" , trusted) ∷ ("B" , trusted) ∷ []) ((iwt "wagerAmount" Nat) ∷ (iwt "escrowAmount" Nat) ∷ [])) coinFlipCode)))
 
     testOutput' : LH.Expr
     testOutput' = fromJust (map-Maybe (unsafeAST.toLurkGlowcode' ∘ labelStates') (tryTranslationUnsafe.toLMonad _ (testCoinFlipProjected)))

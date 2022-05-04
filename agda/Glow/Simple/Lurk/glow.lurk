@@ -87,6 +87,7 @@
      ;; returns : ((pubs start) result) or t or NIL
      (run-glow (lambda (pubs code start target)
 		 (atomic-action-rec code
+				    ;;      bind
 				    (lambda (code-a fun-b)
 				      (let ((result-a (run-glow pubs code-a start target)))
 					   
@@ -96,6 +97,7 @@
 						  (start2 (car (cdr (car result-a)))))
 					           (run-glow pubs2 code2 start2 target)
 						   ))))
+				    ;;       next
 				    (lambda (code-a code-b)
 				      (let ((result-a (run-glow pubs code-a start target)))
 					   
@@ -103,9 +105,12 @@
 					    (let ((pubs2 (car (car result-a)))
 						  (start2 (car (cdr (car result-a)))))
 					           (run-glow pubs2 code-b start2 target)
-						  ))))
+						   ))))
+				    ;;      pure
 				    (lambda (x) (cons (cons pubs (cons start ())) (cons x ())))
+				    ;;      require
 				    (lambda (x) (if x (cons (cons pubs (cons start ())) (cons x ())) 'require-fail))
+				    ;;      atomic
 				    (lambda (a id h)
 				                  ( if start
                                                           (let ((new-start (if (eq start id) NIL start ))
@@ -113,13 +118,7 @@
 								(result (if (eq h 'publish) (car pubs) 'glow-unit-lit)))
 							       (cons (cons new-pubs (cons new-start ())) (cons result ())))
 						             
-							  (eq a target)
-							  )
-					    )
-				    )
-
-		))
-     )
+							  (eq a target)))))))
   (current-env)
   
   )

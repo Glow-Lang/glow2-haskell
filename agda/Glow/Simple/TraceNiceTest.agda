@@ -43,7 +43,7 @@ module TestTraceNice where
   -- open AST String {{String-Discrete-postulated}} one
 
 
-  open TraceNice {String} {String} {Basic-BuiltIns} {ptps =  ("A" , honest) ∷ ("B" , honest) ∷ []}
+  open TraceNice {String} {String} {Basic-BuiltIns} {ptps =  ("A" , trusted) ∷ ("B" , trusted) ∷ []}
 
 
   

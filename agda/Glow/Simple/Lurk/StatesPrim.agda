@@ -48,14 +48,14 @@ open import Glow.ListDecProps
 
 
 module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}}
-            {BuilitInsIndex : Type₀} {{IsDiscrete-BuilitInsIndex : IsDiscrete BuilitInsIndex}}
-              {builtIns : BuiltIns' BuilitInsIndex {{IsDiscrete-BuilitInsIndex}}} where
+            {BuiltInsIndex : Type₀} {{IsDiscrete-BuiltInsIndex : IsDiscrete BuiltInsIndex}}
+              {builtIns : BuiltIns' BuiltInsIndex {{IsDiscrete-BuiltInsIndex}}} where
 
 
   module TraceNice {ptpsIds : List (Identifier)} where
 
     ptps : List (Identifier × ParticipantModality)
-    ptps = map-List (_, dishonest) ptpsIds
+    ptps = map-List (_, distrusted) ptpsIds
     
     module _ {uniquePtps : _} where
     
@@ -75,7 +75,7 @@ module _ {Identifier : Type₀} {{IsDiscrete-Identifier : IsDiscrete Identifier}
         field
           stateContextVars : List (GType × Identifier)
           action : Action
-          caller : DishonestParticipantId
+          caller : DistrustedParticipantId
           
 
           -- targetStateId : Fin numberOfStates
