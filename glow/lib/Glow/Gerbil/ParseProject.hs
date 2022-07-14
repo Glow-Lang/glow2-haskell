@@ -112,7 +112,7 @@ parseCommandDebug = do
     Left err ->
       errorBundlePretty err
 
-prettyContract :: GlowProjectContract -> Doc ann
+prettyContract :: GlowProjectContract () -> Doc ann
 prettyContract glowContract =
   indent 2 $
     vsep $
@@ -124,7 +124,7 @@ prettyContract glowContract =
       )
         <$> Map.toList glowContract
 
-parseModule :: SExpr -> [ProjectStatement]
+parseModule :: SExpr -> [ProjectStatement ()]
 parseModule = \case
   List (Atom "@module" : Pair _startLabel _endLabel : statements) ->
     parseStatement <$> statements
@@ -132,7 +132,7 @@ parseModule = \case
     error $ "Invalid module format: " <> show unknown
 
 -- TODO: We should be able to autogen these from JSON
-parseStatement :: SExpr -> ProjectStatement
+parseStatement :: SExpr -> ProjectStatement ()
 parseStatement = \case
   Builtin "@label" [Atom name] ->
     Label $ Id (BS8.pack name)
@@ -165,7 +165,7 @@ parseStatement = \case
       ] ->
       DefineInteraction
         (Id (BS8.pack contractName))
-        ProjectInteractionDef
+        ProjectInteractionDef 
           { pidParticipantNames = Id . BS8.pack . parseName <$> participantNames,
             pidAssetNames = Id . BS8.pack . parseName <$> assetNames,
             pidArgumentNames = Id . BS8.pack . parseName <$> argumentNames,
@@ -182,18 +182,18 @@ parseStatement = \case
   Builtin "set-participant" [roleName] ->
     SetParticipant (Id . BS8.pack $ parseName roleName)
   Builtin "expect-deposited" [Builtin "@record" amounts] ->
-    Deposit (Id "ACTIVE") (parseAssetMap amounts)
+    Deposit () (Id "ACTIVE") (parseAssetMap amounts)
   Builtin "expect-withdrawn" [Atom roleName, Builtin "@record" amounts] ->
-    Withdraw (Id (BS8.pack roleName)) (parseAssetMap amounts)
+    Withdraw () (Id (BS8.pack roleName)) (parseAssetMap amounts)
   Builtin "add-to-publish" _ ->
     Require $ TrexConst (CBool True)
   Builtin "add-to-deposit" [Builtin "@record" amounts] ->
-    Deposit (Id "ACTIVE") (parseAssetMap amounts)
+    Deposit () (Id "ACTIVE") (parseAssetMap amounts)
   Builtin "consensus:withdraw" [Atom roleName, Builtin "@record" amounts] ->
-    Withdraw (Id (BS8.pack roleName)) (parseAssetMap amounts)
+    Withdraw () (Id (BS8.pack roleName)) (parseAssetMap amounts)
   -- FIXME Compiler to plutus IR should separate consensus from participant statements.
   Builtin "participant:withdraw" [Atom roleName, Builtin "@record" amounts] ->
-    Withdraw (Id (BS8.pack roleName)) (parseAssetMap amounts)
+    Withdraw () (Id (BS8.pack roleName)) (parseAssetMap amounts)
   -- NOTE: Does not seem to be used in the latest project.sexp output
   -- FIXME: Make sure this is not used and cleanup
   -- Builtin "add-to-withdraw" [Atom roleName, Atom amountName] ->
@@ -208,12 +208,12 @@ parseStatement = \case
   unknown ->
     error $ "Unknown statement in contract body: " <> show unknown
 
-parseSwitchCase :: SExpr -> (Pat, [ProjectStatement])
+parseSwitchCase :: SExpr -> (Pat, [ProjectStatement ()])
 parseSwitchCase = \case
   List (pat : body) -> (parsePattern pat, parseStatement <$> body)
   unknown -> error $ "expected a pattern and body in a switch case: " <> show unknown
 
-parseInteraction :: SExpr -> (Maybe Id, [ProjectStatement])
+parseInteraction :: SExpr -> (Maybe Id, [ProjectStatement ()])
 parseInteraction = \case
   Builtin participantName statements ->
     (Just (Id (BS8.pack participantName)), parseStatement <$> statements)
@@ -262,12 +262,12 @@ parseVariableMap _datatypes = \case
 data GlowProgram = GlowProgram
   { _participants :: [Id],
     _arguments :: [Id],
-    _consensusProgram :: GlowProjectContract,
-    _participantPrograms :: Map Id GlowProjectContract
+    _consensusProgram :: GlowProjectContract (),
+    _participantPrograms :: Map Id (GlowProjectContract ())
   }
   deriving (Show)
 
-extractPrograms :: [ProjectStatement] -> GlowProgram
+extractPrograms :: [ProjectStatement ()] -> GlowProgram
 extractPrograms statements =
   execState (traverse processHeaderStatement statements) initialState
   where
@@ -313,7 +313,7 @@ extractPrograms statements =
       stmt ->
         addStatement stmt
 
-    setParticipant :: Id -> State (Maybe Id, ExecutionPoint, Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)) ()
+    setParticipant :: Id -> State (Maybe Id, ExecutionPoint, Map ExecutionPoint ([ProjectStatement ()], Maybe ExecutionPoint)) ()
     setParticipant newParticipant =
       modify $ \cur@(curParticipant, curLabel, contract) ->
         if curParticipant == Just newParticipant
@@ -334,7 +334,7 @@ extractPrograms statements =
             Nothing ->
               (Just newParticipant, curLabel, contract & Map.insert curLabel ([SetParticipant newParticipant], Nothing))
 
-    addStatement :: ProjectStatement -> State (Maybe Id, ExecutionPoint, Map ExecutionPoint ([ProjectStatement], Maybe ExecutionPoint)) ()
+    addStatement :: ProjectStatement () -> State (Maybe Id, ExecutionPoint, Map ExecutionPoint ([ProjectStatement ()], Maybe ExecutionPoint)) ()
     addStatement stmt =
       modify $ \(curParticipant, curLabel, contract) ->
         let newContract = case Map.lookup curLabel contract of

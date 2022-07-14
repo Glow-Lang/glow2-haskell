@@ -50,16 +50,16 @@ interceptAW = censor (const mempty) . listen
 
 ----------
 
-functionLift :: [GGT.AnfStatement] -> State UnusedTable Module
+functionLift :: [GGT.AnfStatement ()] -> State UnusedTable Module
 -- TODO: if the Module type changes to use a Map of top-level functions,
 --       the functions should be filtered and collected into the Map here
 functionLift s =
   Module . DList.toList <$> srWS (liftTopStmts Nothing Set.empty s)
 
-liftTopStmts ::  Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState ()
+liftTopStmts ::  Maybe Id -> Set Id -> [GGT.AnfStatement ()] -> LiftState ()
 liftTopStmts mpart locals = traverse_ (liftTopStmt mpart locals)
 
-liftTopStmt :: Maybe Id -> Set Id -> GGT.AnfStatement -> LiftState ()
+liftTopStmt :: Maybe Id -> Set Id -> GGT.AnfStatement () -> LiftState ()
 -- when mpart is (Just p), must produce TsBodyStmt BsPartStmt (Just p)
 liftTopStmt mpart locals = \case
   -- cases for TopStmt
@@ -84,9 +84,9 @@ liftTopStmt mpart locals = \case
   GGT.DefineType f xs b -> tell [TsDefType f xs b]
   GGT.DefineDatatype f xs vs -> tell [TsDefData f xs vs]
   -- cases for BodyStmt
-  GGT.Publish p xs -> tell (DList.fromList [TsBodyStmt (BsPublish p x) | x <- xs])
-  GGT.Deposit p am -> tell [TsBodyStmt (BsDeposit p am)]
-  GGT.Withdraw p am -> tell [TsBodyStmt (BsWithdraw p am)]
+  GGT.Publish _ p xs -> tell (DList.fromList [TsBodyStmt (BsPublish p x) | x <- xs])
+  GGT.Deposit _ p am -> tell [TsBodyStmt (BsDeposit p am)]
+  GGT.Withdraw _ p am -> tell [TsBodyStmt (BsWithdraw p am)]
   GGT.Switch a cs -> 
     (case mpart of
       -- case for BsSwitch
@@ -106,7 +106,7 @@ liftTopStmt mpart locals = \case
   GGT.Require a -> tell [TsBodyStmt (BsPartStmt mpart (PsRequire a))]
   GGT.Return e -> tell [TsBodyStmt (BsPartStmt mpart (PsReturn (translateExpr e)))]
 
-liftBodyStmts :: Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [BodyStmt]
+liftBodyStmts :: Maybe Id -> Set Id -> [GGT.AnfStatement ()] -> LiftState [BodyStmt]
 liftBodyStmts mpart locals stmts = do
   ((), stmts2) <- interceptAW (liftTopStmts mpart (locals `union` localDefs stmts) stmts)
   splitBody (DList.toList stmts2)
@@ -120,16 +120,16 @@ splitBody1 = \case
   TsBodyStmt b -> pure [b]
   t -> tell [t] *> pure []
 
-liftPartStmts :: Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [PartStmt]
+liftPartStmts :: Maybe Id -> Set Id -> [GGT.AnfStatement ()] -> LiftState [PartStmt]
 liftPartStmts mpart locals stmts = do
   bs <- liftBodyStmts mpart locals stmts
   pure [ps | BsPartStmt _ ps <- bs]
 
-liftSwitchCases :: Maybe Id -> Set Id -> (Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [stmt]) -> [(Pat, [GGT.AnfStatement])] -> LiftState [(Pat, [stmt])]
+liftSwitchCases :: Maybe Id -> Set Id -> (Maybe Id -> Set Id -> [GGT.AnfStatement ()] -> LiftState [stmt]) -> [(Pat, [GGT.AnfStatement ()])] -> LiftState [(Pat, [stmt])]
 liftSwitchCases mpart locals liftStmts =
   traverse (liftSwitchCase mpart locals liftStmts)
 
-liftSwitchCase :: Maybe Id -> Set Id -> (Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [stmt]) -> (Pat, [GGT.AnfStatement]) -> LiftState (Pat, [stmt])
+liftSwitchCase :: Maybe Id -> Set Id -> (Maybe Id -> Set Id -> [GGT.AnfStatement ()] -> LiftState [stmt]) -> (Pat, [GGT.AnfStatement ()]) -> LiftState (Pat, [stmt])
 liftSwitchCase mpart locals liftStmts (pat, stmts) = do
   bs <- liftStmts mpart (locals `union` patVars pat) stmts
   pure (pat, bs)
@@ -142,7 +142,7 @@ translateExpr = \case
   GGT.Sign a -> ExSign a
   GGT.Input t a -> ExInput t a
   GGT.EqlExpr a b -> ExEq a b
-  GGT.AppExpr f as -> ExApp f as
+  GGT.AppExpr f as -> ExApp (TrexVar f) as
   GGT.TrvExpr a -> ExTriv a
   e@(GGT.ExpectPublished _) ->
     error ("Glow.Translate.FunctionLift.translateExpr: bad ExpectPublished expression in ANF input: " <> show e <> "\n"
@@ -150,10 +150,10 @@ translateExpr = \case
 
 ----------
 
-localDefs :: [GGT.AnfStatement] -> Set Id
+localDefs :: [GGT.AnfStatement ()] -> Set Id
 localDefs = unionMap localDefs1
 
-localDefs1 :: GGT.AnfStatement -> Set Id
+localDefs1 :: GGT.AnfStatement () -> Set Id
 -- include function definitions, but not interaction definitions
 -- include localDefs in switch bodies, but not pattern variables
 localDefs1 = \case
@@ -163,19 +163,19 @@ localDefs1 = \case
   GGT.Switch _ cs -> unionMap (localDefs . snd) cs
   _ -> Set.empty
 
-usedVars :: [GGT.AnfStatement] -> Set Id
+usedVars :: [GGT.AnfStatement ()] -> Set Id
 usedVars = unionMap usedVars1
 
-usedVars1 :: GGT.AnfStatement -> Set Id
+usedVars1 :: GGT.AnfStatement () -> Set Id
 usedVars1 = \case
   GGT.DefineInteraction _ (GGT.AnfInteractionDef _ _ _ bs) -> usedVars bs
   GGT.Define _ e -> usedVarsExpr e
   GGT.DefineFunction _ _ bs -> usedVars bs
   GGT.AtParticipant p s -> Set.singleton p `union` usedVars1 s
   GGT.SetParticipant p -> Set.singleton p
-  GGT.Publish p xs -> Set.singleton p `union` Set.fromList xs
-  GGT.Deposit p am -> Set.singleton p `union` usedVarsAM am
-  GGT.Withdraw p am -> Set.singleton p `union` usedVarsAM am
+  GGT.Publish _ p xs -> Set.singleton p `union` Set.fromList xs
+  GGT.Deposit _ p am -> Set.singleton p `union` usedVarsAM am
+  GGT.Withdraw _ p am -> Set.singleton p `union` usedVarsAM am
   GGT.Ignore e -> usedVarsExpr e
   GGT.Require a -> usedVarsGVR a
   GGT.Return e -> usedVarsExpr e
@@ -189,7 +189,7 @@ usedVarsExpr = \case
   GGT.Sign a -> usedVarsGVR a
   GGT.Input _ a -> usedVarsGVR a
   GGT.EqlExpr a b -> usedVarsGVR a `union` usedVarsGVR b
-  GGT.AppExpr f as -> usedVarsGVR f `union` unionMap usedVarsGVR as
+  GGT.AppExpr f as -> usedVarsGVR (TrexVar f) `union` unionMap usedVarsGVR as
   GGT.TrvExpr a -> usedVarsGVR a
 
 usedVarsGVR :: TrivExpr -> Set Id

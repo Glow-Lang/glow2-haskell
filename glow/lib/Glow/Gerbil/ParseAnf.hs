@@ -12,7 +12,7 @@ import Glow.Gerbil.Types as Glow
 import Glow.Prelude
 import Text.SExpression as SExpr
 
-parseModule :: SExpr -> [AnfStatement]
+parseModule :: SExpr -> [AnfStatement ()]
 parseModule = \case
   List (Atom "@module" : Pair _startLabel _endLabel : statements) ->
     parseStatement <$> statements
@@ -20,7 +20,7 @@ parseModule = \case
     error $ "Invalid module format: " <> show unknown
 
 -- TODO: We should be able to autogen these from JSON
-parseStatement :: SExpr -> AnfStatement
+parseStatement :: SExpr -> AnfStatement ()
 parseStatement = \case
   Builtin "@label" [Atom name] ->
     Label $ Id (BS8.pack name)
@@ -69,14 +69,15 @@ parseStatement = \case
     Return (parseExpression sexpr)
   Builtin "@" [Atom roleName, s] ->
     AtParticipant (Id (BS8.pack roleName)) (parseStatement s)
-  Builtin "set-participant" [roleName] ->
-    SetParticipant (Id . BS8.pack $ parseName roleName)
+ -- this should be imposible in ANF
+  -- Builtin "set-participant" [roleName] -> 
+  --   SetParticipant (Id . BS8.pack $ parseName roleName)
   Builtin "publish!" (Atom roleName : vars) ->
-    Publish (Id (BS8.pack roleName)) (Id . BS8.pack <$> (parseName <$> vars))
+    Publish () (Id (BS8.pack roleName)) (Id . BS8.pack <$> (parseName <$> vars))
   Builtin "deposit!" [Atom roleName, Builtin "@record" amounts] ->
-    Deposit (Id (BS8.pack roleName)) (parseAssetMap amounts)
+    Deposit () (Id (BS8.pack roleName)) (parseAssetMap amounts)
   Builtin "withdraw!" [Atom roleName, Builtin "@record" amounts] ->
-    Withdraw (Id (BS8.pack roleName)) (parseAssetMap amounts)
+    Withdraw () (Id (BS8.pack roleName)) (parseAssetMap amounts)
   Builtin "require!" [Atom variableName] ->
     Require $ var variableName
   Builtin "assert!" [Atom variableName] ->
@@ -86,7 +87,7 @@ parseStatement = \case
   unknown ->
     error $ "Unknown statement in contract body: " <> show unknown
 
-parseSwitchCase :: SExpr -> (Pat, [AnfStatement])
+parseSwitchCase :: SExpr -> (Pat, [AnfStatement ()])
 parseSwitchCase = \case
   List (pat : body) -> (parsePattern pat, parseStatement <$> body)
   unknown -> error $ "expected a pattern and body in a switch case: " <> show unknown

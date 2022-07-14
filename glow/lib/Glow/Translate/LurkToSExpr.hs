@@ -28,6 +28,8 @@ translateExpr = \case
     S.List (S.Atom "begin" : map translateExpr (exs <> [ex]))
   ExCurrentEnv _ ->
     S.List [S.Atom "current-env"]
+  ExFieldElem _ k ->
+    S.Atom (show k)
   ExEval _ exp Nothing ->
     S.List [S.Atom "eval", translateExpr exp]
   ExEval _ exp (Just env) ->
@@ -38,6 +40,7 @@ translateExpr = \case
     S.List $ map translateExpr (f : args)
   ExQuote _ sexpr ->
     S.List [S.Atom "quote", sexpr]
+  ExString _ s -> S.Atom (show s)
 
 translateSymbol :: Symbol -> S.SExpr
 translateSymbol (Symbol txt) =

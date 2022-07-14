@@ -62,9 +62,9 @@ data FrontEndParams = FrontEndParams
 -- | Data extracted from the frontend.
 data FrontEndData = FrontEndData
   { -- | Output of @glow pass project@
-    fedProject :: [GT.ProjectStatement],
+    fedProject :: [GT.ProjectStatement ()],
     -- | Output of @glow pass anf@
-    fedAnf :: [GT.AnfStatement],
+    fedAnf :: [GT.AnfStatement ()],
     -- | Type table, extracted from the finaltypetable output of @glow pass project@.
     fedTypeTable :: Map BS.ByteString Type,
     -- | UnusedTable, marking which variables are used/unused in the input s-expressions

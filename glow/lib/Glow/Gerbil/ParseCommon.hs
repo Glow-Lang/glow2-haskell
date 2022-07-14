@@ -68,8 +68,8 @@ parseExpression :: SExpr -> Expression
 parseExpression = \case
   Builtin "expect-published" [Builtin "quote" [variableName]] ->
     ExpectPublished (Id (BS8.pack $ parseName variableName))
-  Builtin "@app" (fun : args) ->
-    AppExpr (parseTrivialExpression fun) (parseTrivialExpression <$> args)
+  Builtin "@app" (Atom name : args) ->
+    AppExpr (mkId name) (parseTrivialExpression <$> args)
   Builtin "==" [a, b] ->
     EqlExpr (parseTrivialExpression a) (parseTrivialExpression b)
   Builtin "sign" [arg] ->
@@ -85,8 +85,11 @@ parseExpression = \case
   unknown ->
     error $ "Unknown expression in contract body: " <> show unknown
 
+mkId :: String -> Id
+mkId = Id . BS8.pack
+
 var :: String -> TrivExpr
-var = TrexVar . Id . BS8.pack
+var = TrexVar . mkId
 
 parseName :: SExpr -> String
 parseName = \case

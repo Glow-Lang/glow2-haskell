@@ -23,11 +23,13 @@ data Expr a
   | ExUnary a UnaryOp (Expr a)
   | ExBegin a [Expr a] (Expr a)
   | ExCurrentEnv a
+  | ExFieldElem a Int
   | -- | @eval@ with an optional environment
     ExEval a (Expr a) (Maybe (Expr a))
   | ExSymbol a Symbol
   | ExApply a (Expr a) [Expr a]
   | ExQuote a SExpr
+  | ExString a Text
   deriving (Show, Read, Eq)
 
 -- | A binary operatory
@@ -69,3 +71,7 @@ data Binding a = Binding
 -- | A variable
 newtype Symbol = Symbol {symText :: Text}
   deriving (Show, Read, Eq, Ord, IsString)
+
+mkConsList :: [Expr ()] -> Expr ()
+mkConsList [] = ExNil ()
+mkConsList (x : xs) = ExApply () x [(mkConsList xs)]

@@ -42,7 +42,7 @@ data CreateParams = CreateParams
   { datatypes :: DatatypeMap,
     participants :: Map Id LedgerPubKey, -- TODO: type synonym for this
     arguments :: VariableMap,
-    contract :: GlowProjectContract, -- consensus program
+    contract :: GlowProjectContract (), -- consensus program
     timeoutLength :: Integer
   }
   deriving stock (Generic, Eq, Show)

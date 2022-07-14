@@ -28,6 +28,8 @@ copyright:           2022 MuKn
   -- Text
   -- Web
 
+
+               
 build-type:          Simple
 extra-source-files:
     CHANGELOG.md
@@ -40,6 +42,7 @@ source-repository head
   location: https://github.com/glow-lang/glow
 
 common shared-opts
+  -- ghc-options: -optl/usr/lib/libiconv.dylib
   default-extensions:
       NoImplicitPrelude
     , OverloadedStrings
@@ -61,6 +64,17 @@ common shared-opts
     , prettyprinter ^>=1.7.1
     , sexpr-parser ^>=0.2.2
     , typed-process ^>=0.2.8
+    , uuid
+    , lens
+    , ansi-terminal
+    , raw-strings-qq
+    , scotty
+    , process
+    , aeson-pretty
+    , http-client
+    , http-types
+    , req
+    , cryptonite
   default-language:    Haskell2010
 
 library
@@ -68,6 +82,7 @@ library
   hs-source-dirs: lib
   exposed-modules:
       Glow.Main
+    , Glow.MainLurk
 
     , Glow.Ast.BlockParamPassing
     , Glow.Ast.Common
@@ -80,12 +95,13 @@ library
     , Glow.Prelude
     , Glow.Runtime.Interaction
     , Glow.Runtime.Interaction.STM
+    , Glow.Runtime.Lurk.Commands
     , Glow.Translate.LurkToSExpr
     , Glow.Translate.FunctionLift
     , Glow.Consensus.Local
     , Glow.Consensus.StateChannel
     , Glow.StateChannel
-
+    
     , Glow.Gerbil.Types
     , Glow.Gerbil.Fresh
     , Glow.Gerbil.ParseAnf
@@ -94,24 +110,57 @@ library
     , Glow.Gerbil.ImportSExpr
     , Glow.Gerbil.Client.Types
 
+    , Glow.Mock.Lurk.Consensus
+    , Glow.Mock.Lurk.Server
+    , Glow.Precompiled.Base
+    , Glow.Precompiled.Mark
+    , Glow.Precompiled.LMonad
+    , Glow.Precompiled.LMonadToLurk
+    , Glow.Foreign.Lurk.Base
+    , Glow.Consensus.Lurk
+
+    , Glow.Runtime.Interaction.InterpretAnf    
+    , Glow.Runtime.Interaction.InteractWithServer
+    , Glow.Runtime.Interaction.BuiltIns
+    , Glow.Runtime.Interaction.Interact
+
 executable glow
   import: shared-opts
-  build-depends: glow
+  build-depends: glow,
+                 http-client >= 0.7.11,
+                 lens >= 5.1
   hs-source-dirs: exe
   main-is: Main.hs
 
-test-suite tests
+executable lurk-consensus-mock
   import: shared-opts
-  build-depends:
-      glow
-    , hspec ^>=2.9.4
-  type: exitcode-stdio-1.0
-  hs-source-dirs: tests
-  main-is: Main.hs
-  other-modules:
-      Tests.AstCommon
-    , Tests.Parser
-    , Tests.Runtime.Interaction
-    , Tests.Fresh
-    , Tests.FunctionLift
-    , Tests.Lurk
+  build-depends: glow,
+                 http-client >= 0.7.11,
+                 lens >= 5.1
+  hs-source-dirs: exe
+  main-is: LurkConsensusMock.hs  
+
+executable run-glow
+  import: shared-opts
+  build-depends: glow,
+                 http-client >= 0.7.11,
+                 lens >= 5.1
+  hs-source-dirs: exe
+  main-is: RunGlow.hs  
+
+  
+-- test-suite tests
+--   import: shared-opts
+--   build-depends:
+--       glow
+--     , hspec ^>=2.9.4
+--   type: exitcode-stdio-1.0
+--   hs-source-dirs: tests
+--   main-is: Main.hs
+--   other-modules:
+--       Tests.AstCommon
+--     , Tests.Parser
+--     , Tests.Runtime.Interaction
+--     , Tests.Fresh
+--     , Tests.FunctionLift
+--     , Tests.Lurk
