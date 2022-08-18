@@ -45,17 +45,17 @@ common shared-opts
     , OverloadedStrings
   build-depends:
       base >=4.14 && <5
-    , aeson ^>=2.0.3
+    , aeson ^>=2.1.0
     , base64-bytestring ^>=1.2.1
     , bytestring >=0.10.2 && <0.12
     , containers ^>=0.6.5
     , dlist ^>=1.0
     , extra ^>=1.7.10
-    , transformers ^>=0.5.6.2
+    , transformers >=0.5.6 && <0.7
     , zenhack-prelude ^>=0.1
-    , text ^>=1.2.5
+    , text ^>=2.0.1
     , megaparsec >=6.5 && <9.3
-    , mtl ^>=2.2.2
+    , mtl >=2.2.2 && <2.4
     , concurrency ^>=1.11.0
     , pretty-show ^>=1.10
     , prettyprinter ^>=1.7.1
@@ -104,7 +104,7 @@ test-suite tests
   import: shared-opts
   build-depends:
       glow
-    , hspec ^>=2.9.4
+    , hspec ^>=2.10.0
   type: exitcode-stdio-1.0
   hs-source-dirs: tests
   main-is: Main.hs
