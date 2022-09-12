@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ghc: ["9.2"]
+        ghc: ["9.2", "9.4.1"]
     name: GHC ${{ matrix.ghc }}
     steps:
       - uses: actions/checkout@v3
