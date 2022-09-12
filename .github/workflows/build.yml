@@ -1,0 +1,19 @@
+name: build_and_test
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ghc: ["9.2"]
+    name: GHC ${{ matrix.ghc }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell/actions/setup@v2
+        with:
+          ghc-version: ${{ matrix.ghc }}
+      - run: cabal test all
