@@ -17,3 +17,8 @@ jobs:
         with:
           ghc-version: ${{ matrix.ghc }}
       - run: cabal test all
+  ormolu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: mrkkrp/ormolu-action@v7

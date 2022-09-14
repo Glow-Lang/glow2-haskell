@@ -8,7 +8,7 @@ module Glow.Gerbil.Types where
 import Data.ByteString (ByteString)
 import Data.Map.Strict (Map)
 import GHC.Generics hiding (Datatype)
-import Glow.Ast.Common (Id, Constant, TrivExpr)
+import Glow.Ast.Common (Constant, Id, TrivExpr)
 import Glow.Prelude
 
 -- TODO: variable cleanup, only keep live variables between each transaction

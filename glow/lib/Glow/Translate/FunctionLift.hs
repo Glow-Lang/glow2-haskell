@@ -6,17 +6,17 @@ module Glow.Translate.FunctionLift where
 import Control.Monad.Extra (concatMapM)
 import Control.Monad.State (State, runState)
 import qualified Control.Monad.State as State (get, put)
-import Control.Monad.Trans.RWS.CPS (RWS, execRWS, tell, listen, censor)
+import Control.Monad.Trans.RWS.CPS (RWS, censor, execRWS, listen, tell)
 import qualified Control.Monad.Trans.RWS.CPS as RWS (state)
 import Data.DList (DList)
-import qualified Data.DList as DList (toList, fromList)
-import Data.Set (Set, union, unions, intersection, (\\))
-import qualified Data.Set as Set (fromList, toAscList, empty, singleton)
+import qualified Data.DList as DList (fromList, toList)
 import qualified Data.Map.Strict as Map
+import Data.Set (Set, intersection, union, unions, (\\))
+import qualified Data.Set as Set (empty, fromList, singleton, toAscList)
 import Glow.Ast.Common
 import Glow.Ast.LiftedFunctions
 import Glow.Gerbil.Fresh
-import Glow.Gerbil.Types (Pat(..))
+import Glow.Gerbil.Types (Pat (..))
 import qualified Glow.Gerbil.Types as GGT
 import Glow.Prelude
 
@@ -56,7 +56,7 @@ functionLift :: [GGT.AnfStatement] -> State UnusedTable Module
 functionLift s =
   Module . DList.toList <$> srWS (liftTopStmts Nothing Set.empty s)
 
-liftTopStmts ::  Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState ()
+liftTopStmts :: Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState ()
 liftTopStmts mpart locals = traverse_ (liftTopStmt mpart locals)
 
 liftTopStmt :: Maybe Id -> Set Id -> GGT.AnfStatement -> LiftState ()
@@ -64,39 +64,45 @@ liftTopStmt :: Maybe Id -> Set Id -> GGT.AnfStatement -> LiftState ()
 liftTopStmt mpart locals = \case
   -- cases for TopStmt
   GGT.AtParticipant p s ->
-    (case mpart of
-      Nothing -> liftTopStmt (Just p) locals s
-      Just _ -> error ("@ at-participant not allowed, already within a participant"))
+    ( case mpart of
+        Nothing -> liftTopStmt (Just p) locals s
+        Just _ -> error ("@ at-participant not allowed, already within a participant")
+    )
   GGT.DefineInteraction i (GGT.AnfInteractionDef ps as xs bs) ->
-    (case mpart of
-      Nothing -> do
-       bs2 <- liftBodyStmts mpart (locals `union` Set.fromList ps `union` Set.fromList as `union` Set.fromList xs) bs
-       tell [TsDefInteraction i (InteractionDef ps as xs bs2)]
-      Just _ -> error ("interaction definition not allowed within a participant: " <> show i))
+    ( case mpart of
+        Nothing -> do
+          bs2 <- liftBodyStmts mpart (locals `union` Set.fromList ps `union` Set.fromList as `union` Set.fromList xs) bs
+          tell [TsDefInteraction i (InteractionDef ps as xs bs2)]
+        Just _ -> error ("interaction definition not allowed within a participant: " <> show i)
+    )
   GGT.DefineFunction f xs bs -> do
     bs2 <- liftBodyStmts mpart (locals `union` Set.singleton f `union` Set.fromList xs) bs
-    (case Set.toAscList (intersection locals (usedVars bs \\ Set.fromList xs)) of
-      [] -> tell [TsDefLambda mpart f (Lambda [] xs bs2)]
-      cs -> do
-        f2 <- rwSA (freshId f)
-        tell [TsDefLambda mpart f2 (Lambda cs xs bs2),
-              TsBodyStmt (BsPartStmt mpart (PsDef f (ExCapture (TrexVar f2) (TrexVar <$> cs))))])
+    ( case Set.toAscList (intersection locals (usedVars bs \\ Set.fromList xs)) of
+        [] -> tell [TsDefLambda mpart f (Lambda [] xs bs2)]
+        cs -> do
+          f2 <- rwSA (freshId f)
+          tell
+            [ TsDefLambda mpart f2 (Lambda cs xs bs2),
+              TsBodyStmt (BsPartStmt mpart (PsDef f (ExCapture (TrexVar f2) (TrexVar <$> cs))))
+            ]
+      )
   GGT.DefineType f xs b -> tell [TsDefType f xs b]
   GGT.DefineDatatype f xs vs -> tell [TsDefData f xs vs]
   -- cases for BodyStmt
   GGT.Publish p xs -> tell (DList.fromList [TsBodyStmt (BsPublish p x) | x <- xs])
   GGT.Deposit p am -> tell [TsBodyStmt (BsDeposit p am)]
   GGT.Withdraw p am -> tell [TsBodyStmt (BsWithdraw p am)]
-  GGT.Switch a cs -> 
-    (case mpart of
-      -- case for BsSwitch
-      Nothing -> do
-        cs2 <- liftSwitchCases mpart locals liftBodyStmts cs
-        tell [TsBodyStmt (BsSwitch (Switch a cs2))]
-      -- case for PsSwitch
-      Just _ -> do
-        cs2 <- liftSwitchCases mpart locals liftPartStmts cs
-        tell [TsBodyStmt (BsPartStmt mpart (PsSwitch (Switch a cs2)))])
+  GGT.Switch a cs ->
+    ( case mpart of
+        -- case for BsSwitch
+        Nothing -> do
+          cs2 <- liftSwitchCases mpart locals liftBodyStmts cs
+          tell [TsBodyStmt (BsSwitch (Switch a cs2))]
+        -- case for PsSwitch
+        Just _ -> do
+          cs2 <- liftSwitchCases mpart locals liftPartStmts cs
+          tell [TsBodyStmt (BsPartStmt mpart (PsSwitch (Switch a cs2)))]
+    )
   -- cases for PartStmt
   GGT.Label bs -> tell [TsBodyStmt (BsPartStmt mpart (PsLabel bs))]
   GGT.DebugLabel _ -> tell []
@@ -145,8 +151,12 @@ translateExpr = \case
   GGT.AppExpr f as -> ExApp f as
   GGT.TrvExpr a -> ExTriv a
   e@(GGT.ExpectPublished _) ->
-    error ("Glow.Translate.FunctionLift.translateExpr: bad ExpectPublished expression in ANF input: " <> show e <> "\n"
-           <> "  expected Publish statements instead")
+    error
+      ( "Glow.Translate.FunctionLift.translateExpr: bad ExpectPublished expression in ANF input: "
+          <> show e
+          <> "\n"
+          <> "  expected Publish statements instead"
+      )
 
 ----------
 

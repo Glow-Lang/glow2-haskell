@@ -7,7 +7,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS8
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Glow.Ast.Common (Id(..), Constant(..), TrivExpr(..), cInteger)
+import Glow.Ast.Common (Constant (..), Id (..), TrivExpr (..), cInteger)
 import Glow.Gerbil.Types as Glow
 import Glow.Prelude
 import Text.SExpression as SExpr

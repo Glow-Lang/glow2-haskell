@@ -20,7 +20,7 @@ import qualified Data.ByteString.Char8 as BS8
 import Data.Either (fromRight)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Glow.Ast.Common (Id(..), Constant(..), TrivExpr(..))
+import Glow.Ast.Common (Constant (..), Id (..), TrivExpr (..))
 import Glow.Gerbil.Client.Types
   ( CreateParams (..),
     MoveParams (..),
@@ -82,14 +82,18 @@ parseCommandPath filePath = do
     Right contractSexpr ->
       let program = extractPrograms (parseModule contractSexpr)
        in show $
-            "Participants:" <+> prettyList (show <$> _participants program) <> line
-              <> "Arguments:" <+> prettyList (show <$> _arguments program)
-              <> line
-              <> line
-              <> "Consensus program:" <+> line
-              <> prettyContract (_consensusProgram program)
-              <> line
-              <> vsep (fmap (\(participant, contract) -> pretty (BS8.unpack (idBS participant)) <> " program:" <+> line <> prettyContract contract) (Map.toList $ _participantPrograms program))
+            "Participants:"
+              <+> prettyList (show <$> _participants program)
+                <> line
+                <> "Arguments:"
+              <+> prettyList (show <$> _arguments program)
+                <> line
+                <> line
+                <> "Consensus program:"
+              <+> line
+                <> prettyContract (_consensusProgram program)
+                <> line
+                <> vsep (fmap (\(participant, contract) -> pretty (BS8.unpack (idBS participant)) <> " program:" <+> line <> prettyContract contract) (Map.toList $ _participantPrograms program))
     Left err ->
       errorBundlePretty err
 
@@ -101,14 +105,18 @@ parseCommandDebug = do
     Right contractSexpr ->
       let program = extractPrograms (parseModule contractSexpr)
        in show $
-            "Participants:" <+> prettyList (show <$> _participants program) <> line
-              <> "Arguments:" <+> prettyList (show <$> _arguments program)
-              <> line
-              <> line
-              <> "Consensus program:" <+> line
-              <> prettyContract (_consensusProgram program)
-              <> line
-              <> vsep (fmap (\(participant, contract) -> pretty (BS8.unpack (idBS participant)) <> " program:" <+> line <> prettyContract contract) (Map.toList $ _participantPrograms program))
+            "Participants:"
+              <+> prettyList (show <$> _participants program)
+                <> line
+                <> "Arguments:"
+              <+> prettyList (show <$> _arguments program)
+                <> line
+                <> line
+                <> "Consensus program:"
+              <+> line
+                <> prettyContract (_consensusProgram program)
+                <> line
+                <> vsep (fmap (\(participant, contract) -> pretty (BS8.unpack (idBS participant)) <> " program:" <+> line <> prettyContract contract) (Map.toList $ _participantPrograms program))
     Left err ->
       errorBundlePretty err
 
@@ -117,10 +125,12 @@ prettyContract glowContract =
   indent 2 $
     vsep $
       ( \(k, (stmts, maybeExit)) ->
-          "->" <+> viaShow k <> line
-            <> indent 4 (vsep (viaShow <$> stmts))
-            <> line
-            <> maybe "" (\exit -> "<-" <+> viaShow exit) maybeExit
+          "->"
+            <+> viaShow k
+              <> line
+              <> indent 4 (vsep (viaShow <$> stmts))
+              <> line
+              <> maybe "" (\exit -> "<-" <+> viaShow exit) maybeExit
       )
         <$> Map.toList glowContract
 

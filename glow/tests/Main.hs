@@ -3,9 +3,9 @@ module Main (main) where
 import Glow.Prelude
 import Test.Hspec
 import qualified Tests.AstCommon
-import qualified Tests.Lurk
 import qualified Tests.Fresh
 import qualified Tests.FunctionLift
+import qualified Tests.Lurk
 import qualified Tests.Parser
 import qualified Tests.Runtime.Interaction
 
