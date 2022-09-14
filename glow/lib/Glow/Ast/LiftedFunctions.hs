@@ -1,7 +1,7 @@
 module Glow.Ast.LiftedFunctions where
 
 import Glow.Ast.Common
-import Glow.Gerbil.Types (Record, Type, Variant, Pat)
+import Glow.Gerbil.Types (Pat, Record, Type, Variant)
 import Glow.Prelude
 
 data Module = Module [TopStmt]
@@ -75,4 +75,3 @@ data Lambda stmt = Lambda
     lamBody :: [stmt]
   }
   deriving (Show, Read, Eq)
-

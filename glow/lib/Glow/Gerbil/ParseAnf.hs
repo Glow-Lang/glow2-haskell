@@ -6,7 +6,7 @@
 module Glow.Gerbil.ParseAnf where
 
 import qualified Data.ByteString.Char8 as BS8
-import Glow.Ast.Common (Id(..))
+import Glow.Ast.Common (Id (..))
 import Glow.Gerbil.ParseCommon
 import Glow.Gerbil.Types as Glow
 import Glow.Prelude
