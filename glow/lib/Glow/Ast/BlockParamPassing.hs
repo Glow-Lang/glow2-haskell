@@ -24,19 +24,19 @@ import Glow.Prelude
 -- definition that acts as the "entry point", but for a one
 -- used as a library module there may be multiple interaction
 -- definitions.
-data Module = Module
-  { pTypes :: Map Id TypeDef,
-    pInteractions :: Map Id InteractionDef,
-    pFuncs :: Map Id FuncDef,
-    pInitBody :: Body
+data Module a = Module
+  { pTypes :: Map Id (TypeDef a),
+    pInteractions :: Map Id (InteractionDef a),
+    pFuncs :: Map Id (FuncDef a),
+    pInitBody :: Body a
   }
   deriving (Show, Read, Eq)
 
 -- |
 -- A 'Body' has a control-flow graph of blocks with a starting
 -- block label.
-data Body = Body
-  { bdyBlocks :: Map Id Block,
+data Body a = Body
+  { bdyBlocks :: Map Id (Block a),
     bdyStartBlock :: Id
   }
   deriving (Show, Read, Eq)
@@ -57,12 +57,12 @@ data Body = Body
 --    the eventual destination, or go another private block
 --    for the same participant and the same eventual
 --    destination.
-data Block = Block
+data Block a = Block
   { blkPartInfo :: BlockParticipantInfo,
     blkParams :: [Id],
     -- | if the block is private this should only have BsPartStmt with just that participant
-    blkStmts :: [BodyStmt],
-    blkBranch :: Branch
+    blkStmts :: [BodyStmt a],
+    blkBranch :: Branch a
   }
   deriving (Show, Read, Eq)
 
@@ -80,10 +80,10 @@ data EventualDestination
     EpdJump Id
   deriving (Show, Read, Eq)
 
-data Branch
-  = BrReturn Expr
-  | BrJump JumpTarget
-  | BrSwitch TrivExpr SwitchCase (Maybe JumpTarget)
+data Branch a
+  = BrReturn a Expr
+  | BrJump a JumpTarget
+  | BrSwitch a TrivExpr SwitchCase (Maybe JumpTarget)
   deriving (Show, Read, Eq)
 
 data JumpTarget = JumpTarget
@@ -98,37 +98,37 @@ data SwitchCase = SwitchCase
   }
   deriving (Show, Read, Eq)
 
-data TypeDef
-  = TdDefType [Id] Type
-  | TdDefData [Id] [Variant]
+data TypeDef a
+  = TdDefType a [Id] Type
+  | TdDefData a [Id] [Variant]
   deriving (Show, Read, Eq)
 
-data InteractionDef = InteractionDef
+data InteractionDef a = InteractionDef
   { idParticipants :: [Id],
     idAssets :: [Id],
     idParams :: [Id],
-    idBody :: Body
+    idBody :: Body a
   }
   deriving (Show, Read, Eq)
 
-data FuncDef = FuncDef
+data FuncDef a = FuncDef
   { fdPart :: (Maybe Id),
     fdCaptures :: [Id],
     fdParams :: [Id],
-    fdBody :: Body
+    fdBody :: Body a
   }
   deriving (Show, Read, Eq)
 
-data BodyStmt
-  = BsPartStmt (Maybe Id) PartStmt
-  | BsWithdraw Id (Record TrivExpr)
-  | BsDeposit Id (Record TrivExpr)
-  | BsPublish Id Id
+data BodyStmt a
+  = BsPartStmt a (Maybe Id) (PartStmt a)
+  | BsWithdraw a Id (Record TrivExpr)
+  | BsDeposit a Id (Record TrivExpr)
+  | BsPublish a Id Id
   deriving (Show, Read, Eq)
 
-data PartStmt
-  = PsDef Id Expr
-  | PsIgnore Expr
-  | PsRequire TrivExpr
-  | PsAssert TrivExpr
+data PartStmt a
+  = PsDef a Id Expr
+  | PsIgnore a Expr
+  | PsRequire a TrivExpr
+  | PsAssert a TrivExpr
   deriving (Show, Read, Eq)
