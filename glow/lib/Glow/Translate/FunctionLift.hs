@@ -73,7 +73,7 @@ import Glow.Prelude
 -- even if those functions can be lifted later without
 -- captures.
 
-type LiftState a = RWS () (DList TopStmt) UnusedTable a
+type LiftState a = RWS () (DList (TopStmt ())) UnusedTable a
 
 rwSA :: State s a -> RWS r w s a
 -- RWS runState
@@ -92,7 +92,7 @@ interceptAW = censor (const mempty) . listen
 
 ----------
 
-functionLift :: [GGT.AnfStatement] -> State UnusedTable Module
+functionLift :: [GGT.AnfStatement] -> State UnusedTable (Module ())
 -- TODO: if the Module type changes to use a Map of top-level functions,
 --       the functions should be filtered and collected into the Map here
 functionLift s =
@@ -114,64 +114,64 @@ liftTopStmt mpart locals = \case
     ( case mpart of
         Nothing -> do
           bs2 <- liftBodyStmts mpart (locals `union` Set.fromList ps `union` Set.fromList as `union` Set.fromList xs) bs
-          tell [TsDefInteraction i (InteractionDef ps as xs bs2)]
+          tell [TsDefInteraction () i (InteractionDef ps as xs bs2)]
         Just _ -> error ("interaction definition not allowed within a participant: " <> show i)
     )
   GGT.DefineFunction f xs bs -> do
     bs2 <- liftBodyStmts mpart (locals `union` Set.singleton f `union` Set.fromList xs) bs
     ( case Set.toAscList (intersection locals (usedVars bs \\ Set.fromList xs)) of
-        [] -> tell [TsDefLambda mpart f (Lambda [] xs bs2)]
+        [] -> tell [TsDefLambda () mpart f (Lambda [] xs bs2)]
         cs -> do
           f2 <- rwSA (freshId f)
           tell
-            [ TsDefLambda mpart f2 (Lambda cs xs bs2),
-              TsBodyStmt (BsPartStmt mpart (PsDef f (ExCapture (TrexVar f2) (TrexVar <$> cs))))
+            [ TsDefLambda () mpart f2 (Lambda cs xs bs2),
+              TsBodyStmt (BsPartStmt () mpart (PsDef () f (ExCapture (TrexVar f2) (TrexVar <$> cs))))
             ]
       )
-  GGT.DefineType f xs b -> tell [TsDefType f xs b]
-  GGT.DefineDatatype f xs vs -> tell [TsDefData f xs vs]
+  GGT.DefineType f xs b -> tell [TsDefType () f xs b]
+  GGT.DefineDatatype f xs vs -> tell [TsDefData () f xs vs]
   -- cases for BodyStmt
-  GGT.Publish p xs -> tell (DList.fromList [TsBodyStmt (BsPublish p x) | x <- xs])
-  GGT.Deposit p am -> tell [TsBodyStmt (BsDeposit p am)]
-  GGT.Withdraw p am -> tell [TsBodyStmt (BsWithdraw p am)]
+  GGT.Publish p xs -> tell (DList.fromList [TsBodyStmt (BsPublish () p x) | x <- xs])
+  GGT.Deposit p am -> tell [TsBodyStmt (BsDeposit () p am)]
+  GGT.Withdraw p am -> tell [TsBodyStmt (BsWithdraw () p am)]
   GGT.Switch a cs ->
     ( case mpart of
         -- case for BsSwitch
         Nothing -> do
           cs2 <- liftSwitchCases mpart locals liftBodyStmts cs
-          tell [TsBodyStmt (BsSwitch (Switch a cs2))]
+          tell [TsBodyStmt (BsSwitch () (Switch a cs2))]
         -- case for PsSwitch
         Just _ -> do
           cs2 <- liftSwitchCases mpart locals liftPartStmts cs
-          tell [TsBodyStmt (BsPartStmt mpart (PsSwitch (Switch a cs2)))]
+          tell [TsBodyStmt (BsPartStmt () mpart (PsSwitch () (Switch a cs2)))]
     )
   -- cases for PartStmt
-  GGT.Label bs -> tell [TsBodyStmt (BsPartStmt mpart (PsLabel bs))]
+  GGT.Label bs -> tell [TsBodyStmt (BsPartStmt () mpart (PsLabel () bs))]
   GGT.DebugLabel _ -> tell []
   GGT.SetParticipant _ -> tell []
-  GGT.Define x e -> tell [TsBodyStmt (BsPartStmt mpart (PsDef x (translateExpr e)))]
-  GGT.Ignore e -> tell [TsBodyStmt (BsPartStmt mpart (PsIgnore (translateExpr e)))]
-  GGT.Require a -> tell [TsBodyStmt (BsPartStmt mpart (PsRequire a))]
-  GGT.Return e -> tell [TsBodyStmt (BsPartStmt mpart (PsReturn (translateExpr e)))]
+  GGT.Define x e -> tell [TsBodyStmt (BsPartStmt () mpart (PsDef () x (translateExpr e)))]
+  GGT.Ignore e -> tell [TsBodyStmt (BsPartStmt () mpart (PsIgnore () (translateExpr e)))]
+  GGT.Require a -> tell [TsBodyStmt (BsPartStmt () mpart (PsRequire () a))]
+  GGT.Return e -> tell [TsBodyStmt (BsPartStmt () mpart (PsReturn () (translateExpr e)))]
 
-liftBodyStmts :: Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [BodyStmt]
+liftBodyStmts :: Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [BodyStmt ()]
 liftBodyStmts mpart locals stmts = do
   ((), stmts2) <- interceptAW (liftTopStmts mpart (locals `union` localDefs stmts) stmts)
   splitBody (DList.toList stmts2)
 
-splitBody :: [TopStmt] -> LiftState [BodyStmt]
+splitBody :: [TopStmt ()] -> LiftState [BodyStmt ()]
 splitBody = concatMapM splitBody1
 
-splitBody1 :: TopStmt -> LiftState [BodyStmt]
+splitBody1 :: TopStmt () -> LiftState [BodyStmt ()]
 -- leave TsBodyStmt, lift everything else
 splitBody1 = \case
   TsBodyStmt b -> pure [b]
   t -> tell [t] *> pure []
 
-liftPartStmts :: Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [PartStmt]
+liftPartStmts :: Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [PartStmt ()]
 liftPartStmts mpart locals stmts = do
   bs <- liftBodyStmts mpart locals stmts
-  pure [ps | BsPartStmt _ ps <- bs]
+  pure [ps | BsPartStmt () _ ps <- bs]
 
 liftSwitchCases :: Maybe Id -> Set Id -> (Maybe Id -> Set Id -> [GGT.AnfStatement] -> LiftState [stmt]) -> [(Pat, [GGT.AnfStatement])] -> LiftState [(Pat, [stmt])]
 liftSwitchCases mpart locals liftStmts =

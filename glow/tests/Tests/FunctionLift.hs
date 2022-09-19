@@ -19,7 +19,7 @@ tests = describe "Glow.Translate.FunctionLift" $ do
         )
         Map.empty
       `shouldBe` Module
-        [TsBodyStmt (BsPartStmt Nothing (PsDef "x" (ExTriv (TrexConst (cInteger 3)))))]
+        [TsBodyStmt (BsPartStmt () Nothing (PsDef () "x" (ExTriv (TrexConst (cInteger 3)))))]
   it ("Should lift already-closed functions to the top without adding capture parameters") $
     do
       evalState
@@ -36,16 +36,17 @@ tests = describe "Glow.Translate.FunctionLift" $ do
         )
         Map.empty
       `shouldBe` Module
-        [ TsDefLambda Nothing "sqr" (Lambda [] ["x"] [BsPartStmt Nothing (PsReturn (ExApp (TrexVar "*") [TrexVar "x", TrexVar "x"]))]),
+        [ TsDefLambda () Nothing "sqr" (Lambda [] ["x"] [BsPartStmt () Nothing (PsReturn () (ExApp (TrexVar "*") [TrexVar "x", TrexVar "x"]))]),
           TsDefLambda
+            ()
             Nothing
             "sumsqr"
             ( Lambda
                 []
                 ["a", "b"]
-                [ BsPartStmt Nothing (PsDef "tmp" (ExApp (TrexVar "sqr") [TrexVar "a"])),
-                  BsPartStmt Nothing (PsDef "tmp0" (ExApp (TrexVar "sqr") [TrexVar "b"])),
-                  BsPartStmt Nothing (PsReturn (ExApp (TrexVar "+") [TrexVar "tmp", TrexVar "tmp0"]))
+                [ BsPartStmt () Nothing (PsDef () "tmp" (ExApp (TrexVar "sqr") [TrexVar "a"])),
+                  BsPartStmt () Nothing (PsDef () "tmp0" (ExApp (TrexVar "sqr") [TrexVar "b"])),
+                  BsPartStmt () Nothing (PsReturn () (ExApp (TrexVar "+") [TrexVar "tmp", TrexVar "tmp0"]))
                 ]
             )
         ]
@@ -63,15 +64,16 @@ tests = describe "Glow.Translate.FunctionLift" $ do
         )
         (execState (traverse fresh ["adder", "x", "add-x", "y", "+"]) Map.empty)
       `shouldBe` Module
-        [ TsDefLambda Nothing "add-x0" (Lambda ["x"] ["y"] [BsPartStmt Nothing (PsReturn (ExApp (TrexVar "+") [TrexVar "x", TrexVar "y"]))]),
+        [ TsDefLambda () Nothing "add-x0" (Lambda ["x"] ["y"] [BsPartStmt () Nothing (PsReturn () (ExApp (TrexVar "+") [TrexVar "x", TrexVar "y"]))]),
           TsDefLambda
+            ()
             Nothing
             "adder"
             ( Lambda
                 []
                 ["x"]
-                [ BsPartStmt Nothing (PsDef "add-x" (ExCapture (TrexVar "add-x0") [TrexVar "x"])),
-                  BsPartStmt Nothing (PsReturn (ExTriv (TrexVar "add-x")))
+                [ BsPartStmt () Nothing (PsDef () "add-x" (ExCapture (TrexVar "add-x0") [TrexVar "x"])),
+                  BsPartStmt () Nothing (PsReturn () (ExTriv (TrexVar "add-x")))
                 ]
             )
         ]
@@ -100,16 +102,17 @@ tests = describe "Glow.Translate.FunctionLift" $ do
         (execState (traverse fresh ["swap", "A", "B", "T", "U", "t", "u", "dlb1", "dlb2", "dlb3"]) Map.empty)
       `shouldBe` Module
         [ TsDefInteraction
+            ()
             "swap"
             ( InteractionDef
                 ["A", "B"]
                 ["T", "U"]
                 ["t", "u"]
-                [ BsDeposit "A" (Map.fromList [("T", TrexVar "t")]),
-                  BsDeposit "B" (Map.fromList [("U", TrexVar "u")]),
-                  BsWithdraw "B" (Map.fromList [("T", TrexVar "t")]),
-                  BsWithdraw "A" (Map.fromList [("U", TrexVar "u")]),
-                  BsPartStmt Nothing (PsReturn (ExTriv (TrexConst CUnit)))
+                [ BsDeposit () "A" (Map.fromList [("T", TrexVar "t")]),
+                  BsDeposit () "B" (Map.fromList [("U", TrexVar "u")]),
+                  BsWithdraw () "B" (Map.fromList [("T", TrexVar "t")]),
+                  BsWithdraw () "A" (Map.fromList [("U", TrexVar "u")]),
+                  BsPartStmt () Nothing (PsReturn () (ExTriv (TrexConst CUnit)))
                 ]
             )
         ]
@@ -141,18 +144,19 @@ tests = describe "Glow.Translate.FunctionLift" $ do
         (execState (traverse fresh ["buySig", "Buyer", "Seller", "DefaultToken", "digest0", "price", "dlb1", "signature", "tmp", "isValidSignature", "dlb2"]) Map.empty)
       `shouldBe` Module
         [ TsDefInteraction
+            ()
             "buySig"
             ( InteractionDef
                 ["Buyer", "Seller"]
                 ["DefaultToken"]
                 ["digest0", "price"]
-                [ BsDeposit "Buyer" (Map.fromList [("DefaultToken", TrexVar "price")]),
-                  BsPartStmt (Just "Seller") (PsDef "signature" (ExSign (TrexVar "digest0"))),
-                  BsPublish "Seller" "signature",
-                  BsPartStmt Nothing (PsDef "tmp" (ExApp (TrexVar "isValidSignature") [TrexVar "Seller", TrexVar "digest0", TrexVar "signature"])),
-                  BsPartStmt Nothing (PsRequire (TrexVar "tmp")),
-                  BsWithdraw "Seller" (Map.fromList [("DefaultToken", TrexVar "price")]),
-                  BsPartStmt Nothing (PsReturn (ExTriv (TrexConst CUnit)))
+                [ BsDeposit () "Buyer" (Map.fromList [("DefaultToken", TrexVar "price")]),
+                  BsPartStmt () (Just "Seller") (PsDef () "signature" (ExSign (TrexVar "digest0"))),
+                  BsPublish () "Seller" "signature",
+                  BsPartStmt () Nothing (PsDef () "tmp" (ExApp (TrexVar "isValidSignature") [TrexVar "Seller", TrexVar "digest0", TrexVar "signature"])),
+                  BsPartStmt () Nothing (PsRequire () (TrexVar "tmp")),
+                  BsWithdraw () "Seller" (Map.fromList [("DefaultToken", TrexVar "price")]),
+                  BsPartStmt () Nothing (PsReturn () (ExTriv (TrexConst CUnit)))
                 ]
             )
         ]
