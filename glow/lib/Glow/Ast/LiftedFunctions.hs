@@ -1,3 +1,23 @@
+-- | Module: Glow.Ast.LiftedFunctions
+--
+-- This module defines an Ast which is the output of the FunctionLift pass.
+--
+-- The Function-Lift pass takes ANF as input and produces Lifted-Functions as
+-- output.
+--
+-- The most notable difference from ANF is that there are multiple tiers of
+-- statements:
+--
+-- * 'TopStmt' for statements directly at the top level of a module, including
+--   interaction definitions, function definitions and type definitions.
+-- * 'BodyStmt' for statements in the bodies of interactions, functions, and
+--   conditionals, including consensus and at-participant statements.
+-- * 'PartStmt' for statements inside at-participant statements, and inside
+--   conditionals within.
+--
+-- The 'TopStmt' function definitions ('TsDefLambda') include
+-- capture-parameters before the function-parameters, and the 'Expr' includes a
+-- form 'ExCapture' to supply capture-arguments to produce a closure.
 module Glow.Ast.LiftedFunctions where
 
 import Glow.Ast.Common

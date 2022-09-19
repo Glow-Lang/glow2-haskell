@@ -1,6 +1,48 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
 
+-- | Module: Glow.Translate.FunctionLift
+--
+-- TODO: replace the s-expression notation here with something that lines
+-- up with the Haskell implementation.
+--
+-- The Function-Lift pass lifts functions to the top level of the module with
+-- capture-parameters.
+--
+-- The capture-parameters might be empty if the function being lifted is
+-- already closed, for example:
+--
+--     (def sumsqr
+--      (λ (a b)
+--        (def sqr (λ (x) (@app * x x)))
+--        (def tmp (@app sqr a))
+--        (def tmp0 (@app sqr b))
+--        (return (@app + tmp tmp0))))
+--
+-- transforms as:
+--
+--     (def sqr (λ () (x) (@app * x x)))
+--     (def sumsqr
+--      (λ () (a b)
+--      (def tmp (@app sqr a))
+--      (def tmp0 (@app sqr b))
+--      (return (@app + tmp tmp0))))
+--
+-- However, if the inner function uses a local variable, that goes in the
+-- capture-parameters:
+--
+--     (def adder
+--      (λ (x)
+--        (def add-x (λ (y) (@app + x y)))
+--        (return add-x)))
+--
+-- transforms as:
+--
+--     (def add-x0 (λ (x0) (y) (@app + x0 y)))
+--     (def adder
+--      (λ () (x)
+--        (def add-x (@capture add-x0 x))
+--        (return add-x)))
 module Glow.Translate.FunctionLift where
 
 import Control.Monad.Extra (concatMapM)
