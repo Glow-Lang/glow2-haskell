@@ -1,8 +1,9 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 
 module Glow.Gerbil.Fresh where
 
-import Control.Monad.State (State, get, put)
+import Control.Monad.State (MonadState, get, put)
 import Data.ByteString.Char8 as BS8 (ByteString, pack, spanEnd, unpack)
 import Data.List (delete, init)
 import Data.Map.Strict (Map)
@@ -98,7 +99,7 @@ useUnused (Just n) (Just (lst, x)) =
 -- Produces a name that hasn't been used in the 'UnusedTable',
 -- which may be either the original name if that hasn't been used yet,
 -- or a modified name with a different nat suffix.
-fresh :: ByteString -> State UnusedTable ByteString
+fresh :: MonadState UnusedTable m => ByteString -> m ByteString
 fresh bs = do
   let (s, n) = bsToBsn bs
   ut <- get
@@ -109,12 +110,12 @@ fresh bs = do
 
 -- |
 -- Marks the given name as used in the 'UnusedTable'.
-markUsed :: ByteString -> State UnusedTable ()
+markUsed :: MonadState UnusedTable m => ByteString -> m ()
 markUsed bs = fresh bs *> pure ()
 
 -- |
 -- Marks all atoms in the given 'SExpr' as used in the 'UnusedTable'.
-markAtomsUsed :: SExpr -> State UnusedTable ()
+markAtomsUsed :: MonadState UnusedTable m => SExpr -> m ()
 markAtomsUsed = \case
   Atom bs -> markUsed (BS8.pack bs)
   List l -> traverse_ markAtomsUsed l
@@ -125,5 +126,5 @@ markAtomsUsed = \case
 -- Produces a name 'Id' that hasn't been used in the 'UnusedTable',
 -- which may be either the original name if that hasn't been used yet,
 -- or a modified name with a different nat suffix.
-freshId :: Id -> State UnusedTable Id
+freshId :: MonadState UnusedTable m => Id -> m Id
 freshId (Id x) = Id <$> fresh x

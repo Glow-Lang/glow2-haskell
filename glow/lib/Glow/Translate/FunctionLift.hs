@@ -46,10 +46,9 @@
 module Glow.Translate.FunctionLift where
 
 import Control.Monad.Extra (concatMapM)
-import Control.Monad.State (State, runState)
+import Control.Monad.RWS.Strict (RWS, censor, execRWS, listen, tell)
+import Control.Monad.State (State)
 import qualified Control.Monad.State as State (get, put)
-import Control.Monad.Trans.RWS.CPS (RWS, censor, execRWS, listen, tell)
-import qualified Control.Monad.Trans.RWS.CPS as RWS (state)
 import Data.DList (DList)
 import qualified Data.DList as DList (fromList, toList)
 import qualified Data.Map.Strict as Map
@@ -74,10 +73,6 @@ import Glow.Prelude
 -- captures.
 
 type LiftState a = RWS () (DList TopStmt) UnusedTable a
-
-rwSA :: State s a -> RWS r w s a
--- RWS runState
-rwSA = RWS.state . runState
 
 srWS :: Monoid w => RWS () w s () -> State s w
 -- State execRWS, output W not A
@@ -122,7 +117,7 @@ liftTopStmt mpart locals = \case
     ( case Set.toAscList (intersection locals (usedVars bs \\ Set.fromList xs)) of
         [] -> tell [TsDefLambda mpart f (Lambda [] xs bs2)]
         cs -> do
-          f2 <- rwSA (freshId f)
+          f2 <- freshId f
           tell
             [ TsDefLambda mpart f2 (Lambda cs xs bs2),
               TsBodyStmt (BsPartStmt mpart (PsDef f (ExCapture (TrexVar f2) (TrexVar <$> cs))))
