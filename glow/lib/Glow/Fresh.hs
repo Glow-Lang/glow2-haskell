@@ -1,7 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Glow.Gerbil.Fresh where
+-- | This module provides facilities for generating unique/fresh identifiers.
+module Glow.Fresh where
 
 import Control.Monad.State (MonadState, get, put)
 import Data.ByteString.Char8 as BS8 (ByteString, pack, spanEnd, unpack)

@@ -17,7 +17,7 @@ import qualified Data.Map.Strict as Map (empty)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Data.Void (Void)
-import Glow.Gerbil.Fresh as Fresh
+import Glow.Fresh as Fresh
 import Glow.Gerbil.ParseAnf as ParseAnf
 import Glow.Gerbil.ParseCommon (parseTypeTable)
 import Glow.Gerbil.ParseProject as ParseProject

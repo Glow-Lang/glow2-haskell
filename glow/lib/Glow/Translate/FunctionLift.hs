@@ -56,7 +56,7 @@ import Data.Set (Set, intersection, union, unions, (\\))
 import qualified Data.Set as Set (empty, fromList, singleton, toAscList)
 import Glow.Ast.Common
 import Glow.Ast.LiftedFunctions
-import Glow.Gerbil.Fresh
+import Glow.Fresh
 import Glow.Gerbil.Types (Pat (..))
 import qualified Glow.Gerbil.Types as GGT
 import Glow.Prelude

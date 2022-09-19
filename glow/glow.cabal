@@ -76,6 +76,7 @@ library
     , Glow.Ast.LowLevel
     , Glow.Ast.LiftedFunctions
     , Glow.Ast.Targets.Lurk
+    , Glow.Fresh
     , Glow.Parser
     , Glow.Prelude
     , Glow.Runtime.Interaction
@@ -87,7 +88,6 @@ library
     , Glow.StateChannel
 
     , Glow.Gerbil.Types
-    , Glow.Gerbil.Fresh
     , Glow.Gerbil.ParseAnf
     , Glow.Gerbil.ParseCommon
     , Glow.Gerbil.ParseProject

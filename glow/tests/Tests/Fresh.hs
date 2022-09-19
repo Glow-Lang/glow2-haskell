@@ -2,7 +2,7 @@ module Tests.Fresh where
 
 import Control.Monad.State (execState, runState)
 import qualified Data.Map.Strict as Map
-import Glow.Gerbil.Fresh
+import Glow.Fresh
 import Glow.Prelude
 import Test.Hspec
 import Text.SExpression
