@@ -70,7 +70,7 @@ data BlockParticipantInfo
   = -- | Public with a set of active participants
     BpiPublic [Id]
   | -- | Private to a single participant, with a single eventual public destination block
-    BpiPrivate (Id, EventualDestination)
+    BpiPrivate Id EventualDestination
   deriving (Show, Read, Eq)
 
 data EventualDestination
