@@ -7,6 +7,8 @@ module Glow.Gerbil.Types where
 
 import Data.ByteString (ByteString)
 import Data.Map.Strict (Map)
+import Data.Set (Set)
+import qualified Data.Set as Set
 import GHC.Generics hiding (Datatype)
 import Glow.Ast.Common (Constant, Id, TrivExpr)
 import Glow.Prelude
@@ -116,6 +118,20 @@ data Pat
   | POr [Pat]
   | PConst Constant
   deriving (Show, Read, Eq)
+
+-- | 'patVars' returns a set of all variables bound by the pattern.
+patVars :: Pat -> Set Id
+patVars = go
+  where
+    go (PTypeAnno p _) = go p
+    go (PVar v) = Set.singleton v
+    go (PAppCtor _ ps) = foldMap go ps
+    go PWild = Set.empty
+    go (PList ps) = foldMap go ps
+    go (PTuple ps) = foldMap go ps
+    go (PRecord record) = foldMap go record
+    go (POr ps) = foldMap go ps -- TODO: check: what does the POr actually do?
+    go (PConst _) = Set.empty
 
 newtype LedgerPubKey = LedgerPubKey ByteString
   deriving stock (Generic, Eq, Show)
