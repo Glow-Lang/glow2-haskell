@@ -4,7 +4,7 @@ import Control.Monad.State (evalState, execState)
 import qualified Data.Map.Strict as Map
 import Glow.Ast.Common
 import Glow.Ast.LiftedFunctions
-import Glow.Gerbil.Fresh
+import Glow.Fresh
 import qualified Glow.Gerbil.Types as GGT
 import Glow.Prelude
 import Glow.Translate.FunctionLift
