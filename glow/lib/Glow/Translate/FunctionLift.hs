@@ -134,11 +134,11 @@ liftTopStmt mpart locals = \case
         -- case for BsSwitch
         Nothing -> do
           cs2 <- liftSwitchCases mpart locals liftBodyStmts cs
-          tell [TsBodyStmt (BsSwitch () (Switch a cs2))]
+          tell [TsBodyStmt (BsSwitch () (Switch () a cs2))]
         -- case for PsSwitch
         Just _ -> do
           cs2 <- liftSwitchCases mpart locals liftPartStmts cs
-          tell [TsBodyStmt (BsPartStmt () mpart (PsSwitch () (Switch a cs2)))]
+          tell [TsBodyStmt (BsPartStmt () mpart (PsSwitch () (Switch () a cs2)))]
     )
   -- cases for PartStmt
   GGT.Label bs -> tell [TsBodyStmt (BsPartStmt () mpart (PsLabel () bs))]

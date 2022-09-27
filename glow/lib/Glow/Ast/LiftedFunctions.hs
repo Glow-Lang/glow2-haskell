@@ -52,7 +52,7 @@ data BodyStmt a
   | BsWithdraw a Id (Record TrivExpr)
   | BsDeposit a Id (Record TrivExpr)
   | BsPublish a Id Id
-  | BsSwitch a (Switch (BodyStmt a))
+  | BsSwitch a (Switch a (BodyStmt a))
   deriving (Show, Read, Eq)
 
 data PartStmt a
@@ -63,11 +63,12 @@ data PartStmt a
   | PsReturn a Expr
   | PsRequire a TrivExpr
   | PsAssert a TrivExpr
-  | PsSwitch a (Switch (PartStmt a))
+  | PsSwitch a (Switch a (PartStmt a))
   deriving (Show, Read, Eq)
 
-data Switch stmt = Switch
-  { swArg :: TrivExpr,
+data Switch a stmt = Switch
+  { swMeta :: a,
+    swArg :: TrivExpr,
     swBranches :: [(Pat, [stmt])]
   }
   deriving (Show, Read, Eq)
