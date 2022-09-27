@@ -4,6 +4,8 @@
 module Glow.Ast.Common where
 
 import qualified Data.ByteString as BS
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Glow.Prelude
 
 -- | An identifier or variable
@@ -29,6 +31,10 @@ data TrivExpr
   = TrexVar Id
   | TrexConst Constant
   deriving (Show, Read, Eq)
+
+trexFreeVars :: TrivExpr -> Set Id
+trexFreeVars (TrexVar v) = Set.singleton v
+trexFreeVars (TrexConst _) = Set.empty
 
 cInteger :: Integer -> Constant
 cInteger i = CInt (intType i) i

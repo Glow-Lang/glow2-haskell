@@ -70,6 +70,7 @@ library
       Glow.Main
 
     , Glow.Ast.BlockParamPassing
+    , Glow.Ast.Classes
     , Glow.Ast.Common
     , Glow.Ast.Surface
     , Glow.Ast.HighLevel
@@ -109,7 +110,8 @@ test-suite tests
   hs-source-dirs: tests
   main-is: Main.hs
   other-modules:
-      Tests.AstCommon
+      Tests.Ast.Common
+    , Tests.Ast.FreeVars
     , Tests.Parser
     , Tests.Runtime.Interaction
     , Tests.Fresh

@@ -2,7 +2,8 @@ module Main (main) where
 
 import Glow.Prelude
 import Test.Hspec
-import qualified Tests.AstCommon
+import qualified Tests.Ast.Common
+import qualified Tests.Ast.FreeVars
 import qualified Tests.Fresh
 import qualified Tests.FunctionLift
 import qualified Tests.Lurk
@@ -11,7 +12,8 @@ import qualified Tests.Runtime.Interaction
 
 main :: IO ()
 main = hspec $ do
-  Tests.AstCommon.tests
+  Tests.Ast.Common.tests
+  Tests.Ast.FreeVars.tests
   Tests.Parser.tests
   Tests.Runtime.Interaction.tests
   Tests.Fresh.tests
