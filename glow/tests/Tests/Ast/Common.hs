@@ -1,4 +1,4 @@
-module Tests.AstCommon where
+module Tests.Ast.Common where
 
 import qualified Glow.Ast.Common
 import Glow.Prelude

@@ -110,7 +110,7 @@ test-suite tests
   hs-source-dirs: tests
   main-is: Main.hs
   other-modules:
-      Tests.AstCommon
+      Tests.Ast.Common
     , Tests.Parser
     , Tests.Runtime.Interaction
     , Tests.Fresh
