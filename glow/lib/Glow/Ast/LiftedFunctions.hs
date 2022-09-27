@@ -24,46 +24,46 @@ import Glow.Ast.Common
 import Glow.Gerbil.Types (Pat, Record, Type, Variant)
 import Glow.Prelude
 
-data Module = Module [TopStmt]
+data Module a = Module [TopStmt a]
   deriving (Show, Read, Eq)
 
-data TopStmt
-  = TsBodyStmt BodyStmt
+data TopStmt a
+  = TsBodyStmt (BodyStmt a)
   | -- Note: in the grammar there are both (deftype id type) and
     -- (deftype (id tyvar ...) type); here we just combine them, where the
     -- first variant has an empty list (likewise for defdata).
-    TsDefType Id [Id] Type
-  | TsDefData Id [Id] [Variant]
-  | TsDefInteraction Id InteractionDef
+    TsDefType a Id [Id] Type
+  | TsDefData a Id [Id] [Variant]
+  | TsDefInteraction a Id (InteractionDef a)
   | -- | participant id (if any), function id, function def:
-    TsDefLambda (Maybe Id) Id (Lambda BodyStmt)
+    TsDefLambda a (Maybe Id) Id (Lambda (BodyStmt a))
   deriving (Show, Read, Eq)
 
-data InteractionDef = InteractionDef
+data InteractionDef a = InteractionDef
   { idParticipants :: [Id],
     idAssets :: [Id],
     idParams :: [Id],
-    idBody :: [BodyStmt]
+    idBody :: [BodyStmt a]
   }
   deriving (Show, Read, Eq)
 
-data BodyStmt
-  = BsPartStmt (Maybe Id) PartStmt
-  | BsWithdraw Id (Record TrivExpr)
-  | BsDeposit Id (Record TrivExpr)
-  | BsPublish Id Id
-  | BsSwitch (Switch BodyStmt)
+data BodyStmt a
+  = BsPartStmt a (Maybe Id) (PartStmt a)
+  | BsWithdraw a Id (Record TrivExpr)
+  | BsDeposit a Id (Record TrivExpr)
+  | BsPublish a Id Id
+  | BsSwitch a (Switch (BodyStmt a))
   deriving (Show, Read, Eq)
 
-data PartStmt
-  = PsLabel Id
-  | PsDebugLabel Id
-  | PsDef Id Expr
-  | PsIgnore Expr
-  | PsReturn Expr
-  | PsRequire TrivExpr
-  | PsAssert TrivExpr
-  | PsSwitch (Switch PartStmt)
+data PartStmt a
+  = PsLabel a Id
+  | PsDebugLabel a Id
+  | PsDef a Id Expr
+  | PsIgnore a Expr
+  | PsReturn a Expr
+  | PsRequire a TrivExpr
+  | PsAssert a TrivExpr
+  | PsSwitch a (Switch (PartStmt a))
   deriving (Show, Read, Eq)
 
 data Switch stmt = Switch
