@@ -151,11 +151,7 @@ translateBodyStmts cc blockName = \case
           LF.PsDebugLabel {} -> translateBodyStmts cc blockName stmts
           LF.PsIgnore _ e -> translateLinear (rewrap (BP.PsIgnore () e)) stmts
           LF.PsDef _ v e -> translateLinear (rewrap (BP.PsDef () v e)) stmts
-          LF.PsAssert {} ->
-            -- XXX: I (isd) think these should actually all be gone by this
-            -- stage of translation; they're a static analysis thing (vs.
-            -- require which is a run-time check).
-            error "TODO: generate code for `assert!`"
+          LF.PsAssert _ e -> translateLinear (rewrap (BP.PsAssert () e)) stmts
           LF.PsRequire _ e -> translateLinear (rewrap (BP.PsRequire () e)) stmts
           LF.PsReturn _ e -> pure ([], BP.BrReturn () e)
           LF.PsSwitch meta sw ->
