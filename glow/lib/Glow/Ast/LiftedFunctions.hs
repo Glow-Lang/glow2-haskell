@@ -283,6 +283,9 @@ data Switch a stmt = Switch
   }
   deriving (Show, Read, Eq)
 
+instance Functor (Switch a) where
+  fmap f sw = sw {swBranches = [(p, map f stmts) | (p, stmts) <- swBranches sw]}
+
 switchWithFreeVars :: IsStmt f => Switch a (f a) -> Switch (Set Id) (f (Set Id))
 switchWithFreeVars sw =
   let branches = map goBranch (swBranches sw)
