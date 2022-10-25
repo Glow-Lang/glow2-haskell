@@ -82,6 +82,7 @@ library
     , Glow.Prelude
     , Glow.Runtime.Interaction
     , Glow.Runtime.Interaction.STM
+    , Glow.Translate.LiftedFunctionsToBlockParam
     , Glow.Translate.LurkToSExpr
     , Glow.Translate.FunctionLift
     , Glow.Consensus.Local
