@@ -83,7 +83,7 @@ data EventualDestination
 data Branch a
   = BrReturn a Expr
   | BrJump a JumpTarget
-  | BrSwitch a TrivExpr SwitchCase (Maybe JumpTarget)
+  | BrSwitch a TrivExpr [SwitchCase] (Maybe JumpTarget)
   deriving (Show, Read, Eq)
 
 data JumpTarget = JumpTarget
